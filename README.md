@@ -1,8 +1,7 @@
-# Next.js + Supabase + ShadCN UI Template
+# Kessel Boilerplate
 
-> **⚠️ Status: UI-Komponente einer größeren Boilerplate**  
-> Dieses Repository enthält das **UI-System und Frontend-Architektur** für eine Full-Stack B2B-Boilerplate.  
-> Der Merge mit dem Backend und der vollständigen Kessel-Infrastruktur ist in Planung (siehe [Kessel Integration Roadmap](docs/04_knowledge/kessel-integration-roadmap.md)).
+> **Full-Stack B2B Boilerplate** mit Next.js 16, Supabase, ShadCN UI und Tailwind v4  
+> Professionelles Template für moderne B2B-Anwendungen mit integriertem Design System und AI-Assistenz.
 
 ---
 
@@ -45,12 +44,25 @@ Ein **produktionsreifes Next.js 16 Template** mit:
 - Supabase-Projekt (2x: Vault + Daten)
 - API-Keys: Google Gemini, OpenAI (optional)
 
-### 2. Installation
+### 2. Installation mit kessel-cli (empfohlen)
+
+```bash
+# Mit kessel-cli (automatisches Setup)
+kessel-cli mein-projekt
+
+# Das Tool führt automatisch durch:
+# - GitHub Repository erstellen
+# - Supabase-Projekt auswählen/erstellen
+# - Secrets aus Vault laden
+# - Dependencies installieren
+```
+
+**Alternative: Manuelles Setup**
 
 ```bash
 # Repository klonen
-git clone https://github.com/phkoenig/shadcn-test-01.git
-cd shadcn-test-01
+git clone https://github.com/phkoenig/kessel-boilerplate.git
+cd kessel-boilerplate
 
 # Dependencies installieren
 pnpm install
@@ -65,6 +77,8 @@ pnpm dev
 ```
 
 **Wichtig:** Vor jedem `pnpm dev` sollte `pnpm pull-env` ausgeführt werden, um aktuelle Secrets zu laden.
+
+→ [kessel-cli Installation & Workflow](docs/04_knowledge/cli-workflow.md)
 
 ### 3. Supabase Setup
 
@@ -283,26 +297,6 @@ Die vollständige Dokumentation ist in **7 Ebenen** strukturiert:
 
 ---
 
-## 🔗 Kessel Integration Status
-
-**⚠️ Dieses Repository ist Teil einer größeren Vision:**
-
-Entweder wird:
-
-- A) Der **Rest der Kessel Boilerplate** hier integriert (Backend, Auth, API), **oder**
-- B) Dieses **UI-System in die Kessel Boilerplate** gemerged
-
-**Aktueller Fortschritt:** 70% (33/47 Tasks)
-
-Kritische offene Punkte:
-
-- Mobile Responsiveness
-- Supabase Auth Integration
-- Unit Tests für Shell-Komponenten
-- Theme Manager UI (vollständig)
-
-→ [Kessel Integration Roadmap](docs/04_knowledge/kessel-integration-roadmap.md)
-
 ---
 
 ## 🛠️ Development
@@ -399,13 +393,13 @@ Private/Proprietary - Dieses Repository ist Teil der Kessel Boilerplate.
 
 ## 📞 Support & Contact
 
-Für Fragen zur Kessel-Integration oder diesem Template:
+Für Fragen oder Support:
 
 - **Dokumentation**: [docs/README.md](docs/README.md)
-- **GitHub Issues**: [github.com/phkoenig/shadcn-test-01/issues](https://github.com/phkoenig/shadcn-test-01/issues)
-- **Roadmap**: [Kessel Integration](docs/04_knowledge/kessel-integration-roadmap.md)
+- **GitHub Issues**: [github.com/phkoenig/kessel-boilerplate/issues](https://github.com/phkoenig/kessel-boilerplate/issues)
+- **CLI Tool**: [kessel-cli](https://github.com/phkoenig/kessel-cli)
 
 ---
 
 **🚀 Powered by Philip König, Berlin**  
-_Ein UI-System für moderne B2B-Anwendungen._
+_Die vollständige Boilerplate für moderne B2B-Anwendungen._
