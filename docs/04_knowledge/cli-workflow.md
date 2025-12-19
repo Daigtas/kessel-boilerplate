@@ -84,17 +84,14 @@ kessel meine-app
 #    - GitHub Token
 #    - Zentrale Supabase URL (Standardwert vorhanden)
 #    - SERVICE_ROLE_KEY (✅ automatisch geladen - Enter drücken!)
-#    - Supabase-Projekt:
-#      → Neues Projekt erstellen (empfohlen) - wird in Kessel-Organisation angelegt
-#      → Manuell URL eingeben (für Spezialfälle)
 #    - Dependencies installieren? (Ja)
 
-# 4. Das Tool richtet automatisch ein:
-#    - Neues Supabase-Projekt in der Kessel-Organisation
-#    - Alle Datenbank-Tabellen (Migrationen)
-#    - Standard-User für sofortigen Zugriff:
-#      → admin@local / admin (Admin-Rolle)
-#      → user@local / user (User-Rolle)
+# 4. Das Tool richtet automatisch ein (Multi-Tenant):
+#    - Schema im Shared Supabase-Projekt (z.B. "galaxy")
+#    - Alle Datenbank-Tabellen im Schema (Migrationen)
+#    - Standard-User für sofortigen Zugriff (Shared Auth):
+#      → admin@local / admin (Admin-Rolle) - existiert für ALLE Projekte
+#      → user@local / user (User-Rolle) - existiert für ALLE Projekte
 
 # 5. Nach erfolgreicher Erstellung:
 cd meine-app

@@ -90,7 +90,10 @@ async function loadDynamicThemeCSS(themeId: string): Promise<void> {
   const existingLink = document.querySelector(`link[data-theme-id="${themeId}"]`)
   if (existingLink) return
 
-  const cssUrl = `${supabaseUrl}/storage/v1/object/public/themes/${themeId}.css`
+  // Multi-Tenant: Schema-basierter Storage-Pfad
+  const schemaName = process.env.NEXT_PUBLIC_PROJECT_SCHEMA || "public"
+  const storagePath = schemaName === "public" ? `${themeId}.css` : `${schemaName}/${themeId}.css`
+  const cssUrl = `${supabaseUrl}/storage/v1/object/public/themes/${storagePath}`
 
   // Erstelle neues Link-Element
   const link = document.createElement("link")

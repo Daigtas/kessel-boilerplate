@@ -41,7 +41,7 @@ Ein **produktionsreifes Next.js 16 Template** mit:
 
 - Node.js 18+ (empfohlen: 20+)
 - pnpm 8+
-- Supabase-Projekt (2x: Vault + Daten)
+- Supabase-Projekt (2x: Vault + Shared Multi-Tenant Projekt)
 - API-Keys: Google Gemini, OpenAI (optional)
 
 ### 2. Installation mit kessel-cli (empfohlen)
@@ -52,7 +52,8 @@ kessel-cli mein-projekt
 
 # Das Tool führt automatisch durch:
 # - GitHub Repository erstellen
-# - Supabase-Projekt auswählen/erstellen
+# - Schema im Shared Supabase-Projekt erstellen (Multi-Tenant)
+# - Datenbank-Migrationen im Schema ausführen
 # - Secrets aus Vault laden
 # - Dependencies installieren
 ```
@@ -80,19 +81,36 @@ pnpm dev
 
 → [kessel-cli Installation & Workflow](docs/04_knowledge/cli-workflow.md)
 
-### 3. Supabase Setup
+### 3. Supabase Setup (Multi-Tenant)
+
+**WICHTIG:** Die Kessel-Boilerplate verwendet eine **Multi-Tenant-Architektur**:
+
+- Alle Projekte teilen sich **ein** Supabase-Projekt (Shared)
+- Jedes Projekt hat ein **eigenes Schema** für Daten-Isolation
+- Auth ist **shared** - Standard-User existieren für alle Projekte
+
+Bei der Installation mit `kessel-cli` wird automatisch:
+
+- Ein Schema im Shared-Projekt erstellt (z.B. `galaxy`, `nova`)
+- Alle Migrationen im Schema ausgeführt
+- Standard-User angelegt (falls noch nicht vorhanden)
+
+**Manuelles Setup** (falls CLI nicht verwendet):
 
 ```bash
-# Migrationen ausführen
-npx supabase db push
+# 1. Schema erstellen
+CREATE SCHEMA IF NOT EXISTS "dein_projektname";
 
-# Themes Storage Bucket erstellen (siehe docs/04_knowledge/supabase-themes-setup.md)
+# 2. Migrationen im Schema ausführen
+node scripts/apply-migrations-to-schema.mjs dein_projektname
 
-# Test-User anlegen und Auth konfigurieren
-pnpm setup
+# 3. .env.local konfigurieren
+NEXT_PUBLIC_SUPABASE_URL=https://ufqlocxqizmiaozkashi.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+NEXT_PUBLIC_PROJECT_SCHEMA=dein_projektname
 ```
 
-Detaillierte Anleitung: [Supabase Themes Setup](docs/04_knowledge/supabase-themes-setup.md)
+Detaillierte Anleitung: [Multi-Tenant Architektur](docs/04_knowledge/multi-tenant-architektur.md) | [Supabase Themes Setup](docs/04_knowledge/supabase-themes-setup.md)
 
 ### 4. Standard-User (automatisch erstellt)
 
