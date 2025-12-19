@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useEffect } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Auth } from "@supabase/auth-ui-react"
 import { ThemeSupa } from "@supabase/auth-ui-shared"
@@ -119,22 +119,30 @@ function AuthUI(): React.ReactElement {
 }
 
 /**
- * Prüft ob Dev-Mode mit Bypass aktiviert ist
- */
-function isDevMode(): boolean {
-  if (typeof window === "undefined") return false
-  const isDev = process.env.NODE_ENV === "development"
-  const bypassEnabled = process.env.NEXT_PUBLIC_AUTH_BYPASS === "true"
-  return isDev && bypassEnabled
-}
-
-/**
  * Login Seite mit Conditional Rendering:
  * - Dev-Mode mit Bypass: DevUserSelector (User-Liste)
  * - Production/Standard: Supabase Auth UI (E-Mail/Passwort)
+ *
+ * WICHTIG: Verwendet useState + useEffect um Hydration-Mismatch zu vermeiden.
+ * Die Prüfung läuft nur client-seitig, nach dem initialen Render.
  */
 export default function LoginPage(): React.ReactElement {
-  const isDev = isDevMode()
+  const [isDevMode, setIsDevMode] = useState<boolean | null>(null)
+
+  // Prüfe Dev-Mode nur client-seitig (nach Hydration)
+  useEffect(() => {
+    const bypassEnabled = process.env.NEXT_PUBLIC_AUTH_BYPASS === "true"
+    const isDev = process.env.NODE_ENV === "development"
+    const isLocalhost =
+      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Notwendig um Hydration-Mismatch zu vermeiden
+    setIsDevMode(bypassEnabled && (isDev || isLocalhost))
+  }, [])
+
+  // Während initialem Render: Zeige immer AuthUI (vermeidet Hydration-Mismatch)
+  // Nach Hydration: Wechsle zu DevUserSelector wenn Dev-Mode aktiviert ist
+  const showDevSelector = isDevMode === true
 
   return (
     <Suspense
@@ -152,7 +160,7 @@ export default function LoginPage(): React.ReactElement {
         </Card>
       }
     >
-      {isDev ? <DevUserSelector /> : <AuthUI />}
+      {showDevSelector ? <DevUserSelector /> : <AuthUI />}
     </Suspense>
   )
 }
