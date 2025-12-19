@@ -45,7 +45,7 @@ export default function HomePage(): React.ReactElement {
 
           {/* APP NAME - Riesig */}
           <h1 className="text-foreground text-6xl font-black tracking-tighter uppercase sm:text-8xl md:text-9xl">
-            {appConfig.name}
+            {appConfig.name.toUpperCase()}
           </h1>
 
           {/* Text Content */}

@@ -283,9 +283,24 @@ export const navigationConfig: NavSection[] = [appContentSection, aboutSection, 
 
 /**
  * App-Metadata
+ *
+ * Der App-Name wird aus NEXT_PUBLIC_APP_NAME geladen oder aus dem Projektnamen abgeleitet.
+ * Wird immer in Großbuchstaben angezeigt.
  */
+function getAppName(): string {
+  // NEXT_PUBLIC_* Variablen werden beim Build eingebettet und sind client-seitig verfügbar
+  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_APP_NAME) {
+    return process.env.NEXT_PUBLIC_APP_NAME.toUpperCase()
+  }
+
+  // Fallback: Für lokale Entwicklung ohne gesetzte Variable
+  // Versuche aus dem Verzeichnisnamen oder einem Standard abzuleiten
+  // In Production sollte NEXT_PUBLIC_APP_NAME immer gesetzt sein
+  return "KESSEL APP"
+}
+
 export const appConfig = {
-  name: "App Name",
+  name: getAppName(),
   logo: Home,
 } as const
 

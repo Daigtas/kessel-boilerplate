@@ -92,7 +92,7 @@ export function Navbar(): React.ReactElement {
                 className="flex min-w-0 items-center gap-2 transition-opacity duration-200 hover:opacity-80"
               >
                 <appConfig.logo className="text-sidebar-foreground size-5 shrink-0" />
-                <span className="text-sidebar-foreground truncate text-lg font-bold transition-opacity duration-200">
+                <span className="text-sidebar-foreground truncate text-lg font-bold uppercase transition-opacity duration-200">
                   {appConfig.name}
                 </span>
               </Link>
