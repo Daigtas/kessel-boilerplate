@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Dokumentation
+    url: https://github.com/phkoenig/kessel-boilerplate/tree/main/docs
+    about: Schau zuerst in die Dokumentation, vielleicht findest du dort eine Lösung.
+  - name: 💬 Diskussionen
+    url: https://github.com/phkoenig/kessel-boilerplate/discussions
+    about: Für allgemeine Fragen und Diskussionen.
