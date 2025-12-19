@@ -165,143 +165,28 @@ async function main() {
     }
   }
 
-  console.log(`\n📤 Führe kombinierte Migration aus...`)
+  console.log(`\n📤 Generiere Migration-SQL-Datei...`)
 
-  // Versuche Migration über Supabase CLI db push
-  try {
-    const { execSync } = await import("child_process")
-    const { writeFileSync, unlinkSync } = await import("fs")
+  // Speichere SQL in Datei für manuelle Ausführung im Supabase Dashboard
+  // Da supabase db push ein verlinktes Projekt benötigt und exec_sql RPC nicht existiert,
+  // generieren wir eine SQL-Datei, die der User im Supabase Dashboard ausführen kann
+  const { writeFileSync } = await import("fs")
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5)
+  const outputFile = join(__dirname, "..", `migration_${SCHEMA_NAME}_${timestamp}.sql`)
 
-    // Erstelle temporäre Migration-Datei
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, -5)
-    const tempMigrationFile = join(
-      __dirname,
-      "..",
-      "supabase",
-      "migrations",
-      `${timestamp}_schema_${SCHEMA_NAME}.sql`
-    )
+  writeFileSync(outputFile, combinedSQL)
+  console.log(`   📄 Migration-SQL gespeichert in: ${outputFile}`)
+  console.log(`\n📋 Führe diese SQL im Supabase Dashboard aus:`)
+  console.log(`   → SQL Editor: https://supabase.com/dashboard/project/${PROJECT_REF}/sql/new`)
+  console.log(`\n${"=".repeat(60)}`)
+  console.log(combinedSQL.substring(0, 500) + "...")
+  console.log(`${"=".repeat(60)}\n`)
+  console.log(`💡 Tipp: Kopiere den Inhalt von ${outputFile} in den Supabase SQL Editor`)
+  console.log(`   → Die Migration wird dann automatisch im Schema "${SCHEMA_NAME}" ausgeführt\n`)
 
-    // Stelle sicher, dass migrations-Verzeichnis existiert
-    const migrationsDir = join(__dirname, "..", "supabase", "migrations")
-    const { mkdirSync } = await import("fs")
-    try {
-      mkdirSync(migrationsDir, { recursive: true })
-    } catch {
-      // Verzeichnis existiert bereits
-    }
-
-    writeFileSync(tempMigrationFile, combinedSQL)
-    console.log(`   📄 Temporäre Migration erstellt: ${tempMigrationFile}`)
-
-    // Führe Migration direkt über Supabase Client aus
-    // (supabase db push benötigt ein verlinktes Projekt, was hier nicht vorhanden ist)
-    console.log(`   🔄 Führe Migration über Supabase Client aus...`)
-
-    try {
-      // Verwende Supabase Client für SQL-Ausführung
-      // Teile SQL in einzelne Statements auf und führe sie sequenziell aus
-      const statements = combinedSQL
-        .split(";")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !s.startsWith("--"))
-
-      let successCount = 0
-      let errorCount = 0
-
-      for (let i = 0; i < statements.length; i++) {
-        const statement = statements[i] + ";"
-
-        // Überspringe leere Statements
-        if (statement.trim() === ";" || statement.trim().length === 0) {
-          continue
-        }
-
-        try {
-          // Verwende Supabase Client rpc für SQL-Ausführung
-          // Hinweis: exec_sql muss als RPC-Funktion in Supabase existieren
-          const { data, error } = await supabase.rpc("exec_sql", { sql: statement })
-
-          if (error) {
-            // Nicht kritisch für CREATE SCHEMA IF NOT EXISTS
-            if (statement.includes("CREATE SCHEMA IF NOT EXISTS")) {
-              console.log(
-                `   ⚠️  Statement ${i + 1}/${statements.length} übersprungen (Schema existiert bereits)`
-              )
-            } else {
-              console.log(
-                `   ⚠️  Statement ${i + 1}/${statements.length} fehlgeschlagen: ${error.message}`
-              )
-              errorCount++
-            }
-          } else {
-            console.log(`   ✓ Statement ${i + 1}/${statements.length} erfolgreich`)
-            successCount++
-          }
-        } catch (statementError) {
-          // Nicht kritisch für CREATE SCHEMA IF NOT EXISTS
-          if (statement.includes("CREATE SCHEMA IF NOT EXISTS")) {
-            console.log(
-              `   ⚠️  Statement ${i + 1}/${statements.length} übersprungen (Schema existiert bereits)`
-            )
-          } else {
-            console.log(
-              `   ⚠️  Statement ${i + 1}/${statements.length} fehlgeschlagen: ${statementError.message}`
-            )
-            errorCount++
-          }
-        }
-      }
-
-      if (
-        errorCount === 0 ||
-        (errorCount === 1 && statements.some((s) => s.includes("CREATE SCHEMA IF NOT EXISTS")))
-      ) {
-        console.log(
-          `\n✅ Migration erfolgreich angewendet! (${successCount} Statements erfolgreich)`
-        )
-
-        // Lösche temporäre Migration-Datei nach erfolgreicher Ausführung
-        try {
-          unlinkSync(tempMigrationFile)
-          console.log(`   🗑️  Temporäre Migration-Datei gelöscht`)
-        } catch {
-          // Ignoriere Cleanup-Fehler
-        }
-      } else {
-        throw new Error(`${errorCount} Statements fehlgeschlagen`)
-      }
-    } catch (clientError) {
-      console.log(`\n⚠️  Supabase Client Migration fehlgeschlagen: ${clientError.message}`)
-      console.log(`\n💡 Hinweis: Die exec_sql RPC-Funktion muss in Supabase existieren.`)
-      console.log(
-        `   → Erstelle sie mit: CREATE OR REPLACE FUNCTION exec_sql(sql text) RETURNS void AS $$ BEGIN EXECUTE sql; END; $$ LANGUAGE plpgsql SECURITY DEFINER;`
-      )
-      console.log(`\n📋 Alternative: Führe diese SQL im Supabase Dashboard aus:`)
-      console.log(`   → SQL Editor: https://supabase.com/dashboard/project/${PROJECT_REF}/sql/new`)
-      console.log(`\n${"=".repeat(60)}`)
-      console.log(combinedSQL)
-      console.log(`${"=".repeat(60)}\n`)
-
-      // Speichere SQL in Datei für manuelle Ausführung
-      const outputFile = join(__dirname, "..", `migration_${SCHEMA_NAME}_${Date.now()}.sql`)
-      writeFileSync(outputFile, combinedSQL)
-      console.log(`💾 SQL gespeichert in: ${outputFile}`)
-      console.log(`   → Kopiere den Inhalt in den Supabase SQL Editor\n`)
-
-      // Lösche temporäre Migration-Datei
-      try {
-        unlinkSync(tempMigrationFile)
-      } catch {
-        // Ignoriere Cleanup-Fehler
-      }
-
-      process.exit(1)
-    }
-  } catch (error) {
-    console.error(`❌ Fehler beim Ausführen der Migration: ${error.message}`)
-    process.exit(1)
-  }
+  // Exit mit Erfolg (nicht Fehler), da SQL-Datei erstellt wurde
+  console.log(`✅ Migration-SQL erfolgreich generiert!`)
+  console.log(`   → Führe die SQL-Datei im Supabase Dashboard aus, um die Migration anzuwenden.\n`)
 }
 
 main().catch((error) => {
