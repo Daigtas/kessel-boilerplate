@@ -46,17 +46,32 @@ function loadEnv() {
 const env = loadEnv()
 
 const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL
-const SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY
+const SERVICE_ROLE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || env.SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error(
-    "Fehler: NEXT_PUBLIC_SUPABASE_URL oder SUPABASE_SERVICE_ROLE_KEY nicht gefunden in .env.local"
+    "❌ Fehler: NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY müssen in .env.local gesetzt sein"
+  )
+  console.error(`   SUPABASE_URL: ${SUPABASE_URL ? "✓" : "✗"}`)
+  console.error(
+    `   SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY ? "✓ (" + SERVICE_ROLE_KEY.substring(0, 20) + "...)" : "✗"}`
   )
   process.exit(1)
 }
 
+// Entferne ANSI Escape Codes aus dem Service Role Key (falls vorhanden)
+const cleanServiceRoleKey = SERVICE_ROLE_KEY.replace(/\x1b\[[0-9;]*m/g, "")
+  .replace(/\u001b\[\d+m/g, "")
+  .trim()
+
+if (!cleanServiceRoleKey || cleanServiceRoleKey.length < 20) {
+  console.error("❌ Fehler: SUPABASE_SERVICE_ROLE_KEY ist ungültig oder zu kurz")
+  console.error(`   Key-Länge: ${cleanServiceRoleKey.length}`)
+  process.exit(1)
+}
+
 // Erstelle Supabase Client mit Service Role (für Admin-Operationen)
-const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+const supabase = createClient(SUPABASE_URL, cleanServiceRoleKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
@@ -123,15 +138,22 @@ async function createUsers() {
 
           if (existingUser) {
             // Aktualisiere Passwort und Metadaten
+            // WICHTIG: Passwort muss mindestens 6 Zeichen haben
+            const updateData = {
+              user_metadata: {
+                display_name: user.displayName,
+                role: user.role,
+              },
+            }
+
+            // Setze Passwort nur wenn es mindestens 6 Zeichen hat
+            if (user.password && user.password.length >= 6) {
+              updateData.password = user.password
+            }
+
             const { error: updateError } = await supabase.auth.admin.updateUserById(
               existingUser.id,
-              {
-                password: user.password,
-                user_metadata: {
-                  display_name: user.displayName,
-                  role: user.role,
-                },
-              }
+              updateData
             )
 
             if (updateError) {

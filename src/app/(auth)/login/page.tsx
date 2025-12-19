@@ -8,6 +8,7 @@ import { Loader2 } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/utils/supabase/client"
+import { DevUserSelector } from "@/components/auth/dev-user-selector"
 
 /**
  * Auth UI Component
@@ -118,9 +119,23 @@ function AuthUI(): React.ReactElement {
 }
 
 /**
- * Login Seite mit Supabase Auth UI
+ * Prüft ob Dev-Mode mit Bypass aktiviert ist
+ */
+function isDevMode(): boolean {
+  if (typeof window === "undefined") return false
+  const isDev = process.env.NODE_ENV === "development"
+  const bypassEnabled = process.env.NEXT_PUBLIC_AUTH_BYPASS === "true"
+  return isDev && bypassEnabled
+}
+
+/**
+ * Login Seite mit Conditional Rendering:
+ * - Dev-Mode mit Bypass: DevUserSelector (User-Liste)
+ * - Production/Standard: Supabase Auth UI (E-Mail/Passwort)
  */
 export default function LoginPage(): React.ReactElement {
+  const isDev = isDevMode()
+
   return (
     <Suspense
       fallback={
@@ -137,7 +152,7 @@ export default function LoginPage(): React.ReactElement {
         </Card>
       }
     >
-      <AuthUI />
+      {isDev ? <DevUserSelector /> : <AuthUI />}
     </Suspense>
   )
 }

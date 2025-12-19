@@ -28,7 +28,7 @@ const inter = Inter({
 const fontVariables = inter.variable
 
 export const metadata: Metadata = {
-  title: "TweakCN Theme Showcase",
+  title: process.env.NEXT_PUBLIC_APP_NAME || "Kessel App",
   description: "ShadCN UI mit TweakCN Theme-Switching und Tailwind CSS v4",
 }
 
