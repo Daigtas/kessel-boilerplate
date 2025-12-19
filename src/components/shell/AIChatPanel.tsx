@@ -90,12 +90,22 @@ export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement
 
       if (!response.ok) {
         let errorText = "Unknown error"
+        let errorCode: string | undefined
         try {
           const errorData = await response.json()
           errorText = errorData.error || errorText
+          errorCode = errorData.code
         } catch {
           errorText = await response.text().catch(() => `HTTP ${response.status}`)
         }
+
+        // Spezielle Behandlung für nicht konfigurierten AI-Service
+        if (errorCode === "AI_SERVICE_NOT_CONFIGURED" || response.status === 503) {
+          throw new Error(
+            "AI-Service ist nicht konfiguriert. Bitte setze GOOGLE_GENERATIVE_AI_API_KEY in .env.local"
+          )
+        }
+
         throw new Error(`API error: ${errorText}`)
       }
 

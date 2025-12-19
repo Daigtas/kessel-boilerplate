@@ -184,13 +184,15 @@ export async function POST(req: Request) {
   try {
     // Prüfe Environment Variable
     if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-      console.error("[Chat API] GOOGLE_GENERATIVE_AI_API_KEY fehlt!")
+      console.warn("[Chat API] GOOGLE_GENERATIVE_AI_API_KEY fehlt - AI Chat ist deaktiviert")
       return new Response(
         JSON.stringify({
-          error: "AI Service nicht konfiguriert. Bitte Administrator kontaktieren.",
+          error:
+            "AI Service nicht konfiguriert. Bitte setze GOOGLE_GENERATIVE_AI_API_KEY in .env.local",
+          code: "AI_SERVICE_NOT_CONFIGURED",
         }),
         {
-          status: 500,
+          status: 503, // Service Unavailable statt 500 (Internal Server Error)
           headers: { "Content-Type": "application/json" },
         }
       )
