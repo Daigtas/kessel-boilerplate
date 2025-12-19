@@ -69,13 +69,13 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 const testUsers = [
   {
     email: "admin@local",
-    password: "admin",
+    password: "admin123", // Mindestens 6 Zeichen für Supabase
     role: "admin",
     displayName: "Administrator",
   },
   {
     email: "user@local",
-    password: "user",
+    password: "user123", // Mindestens 6 Zeichen für Supabase
     role: "user",
     displayName: "Standard User",
   },
