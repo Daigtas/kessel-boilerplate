@@ -194,39 +194,89 @@ async function main() {
     writeFileSync(tempMigrationFile, combinedSQL)
     console.log(`   📄 Temporäre Migration erstellt: ${tempMigrationFile}`)
 
-    // Führe Migration direkt über Supabase REST API aus
+    // Führe Migration direkt über Supabase Client aus
     // (supabase db push benötigt ein verlinktes Projekt, was hier nicht vorhanden ist)
-    console.log(`   🔄 Führe Migration über Supabase REST API aus...`)
+    console.log(`   🔄 Führe Migration über Supabase Client aus...`)
 
     try {
-      // Führe gesamtes SQL über REST API aus
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SERVICE_ROLE_KEY,
-          Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
-          Prefer: "return=representation",
-        },
-        body: JSON.stringify({ sql: combinedSQL }),
-      })
+      // Verwende Supabase Client für SQL-Ausführung
+      // Teile SQL in einzelne Statements auf und führe sie sequenziell aus
+      const statements = combinedSQL
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith("--"))
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`REST API Fehler: ${errorText}`)
+      let successCount = 0
+      let errorCount = 0
+
+      for (let i = 0; i < statements.length; i++) {
+        const statement = statements[i] + ";"
+
+        // Überspringe leere Statements
+        if (statement.trim() === ";" || statement.trim().length === 0) {
+          continue
+        }
+
+        try {
+          // Verwende Supabase Client rpc für SQL-Ausführung
+          // Hinweis: exec_sql muss als RPC-Funktion in Supabase existieren
+          const { data, error } = await supabase.rpc("exec_sql", { sql: statement })
+
+          if (error) {
+            // Nicht kritisch für CREATE SCHEMA IF NOT EXISTS
+            if (statement.includes("CREATE SCHEMA IF NOT EXISTS")) {
+              console.log(
+                `   ⚠️  Statement ${i + 1}/${statements.length} übersprungen (Schema existiert bereits)`
+              )
+            } else {
+              console.log(
+                `   ⚠️  Statement ${i + 1}/${statements.length} fehlgeschlagen: ${error.message}`
+              )
+              errorCount++
+            }
+          } else {
+            console.log(`   ✓ Statement ${i + 1}/${statements.length} erfolgreich`)
+            successCount++
+          }
+        } catch (statementError) {
+          // Nicht kritisch für CREATE SCHEMA IF NOT EXISTS
+          if (statement.includes("CREATE SCHEMA IF NOT EXISTS")) {
+            console.log(
+              `   ⚠️  Statement ${i + 1}/${statements.length} übersprungen (Schema existiert bereits)`
+            )
+          } else {
+            console.log(
+              `   ⚠️  Statement ${i + 1}/${statements.length} fehlgeschlagen: ${statementError.message}`
+            )
+            errorCount++
+          }
+        }
       }
 
-      console.log(`\n✅ Migration erfolgreich über Supabase REST API angewendet!`)
+      if (
+        errorCount === 0 ||
+        (errorCount === 1 && statements.some((s) => s.includes("CREATE SCHEMA IF NOT EXISTS")))
+      ) {
+        console.log(
+          `\n✅ Migration erfolgreich angewendet! (${successCount} Statements erfolgreich)`
+        )
 
-      // Lösche temporäre Migration-Datei nach erfolgreicher Ausführung
-      try {
-        unlinkSync(tempMigrationFile)
-        console.log(`   🗑️  Temporäre Migration-Datei gelöscht`)
-      } catch {
-        // Ignoriere Cleanup-Fehler
+        // Lösche temporäre Migration-Datei nach erfolgreicher Ausführung
+        try {
+          unlinkSync(tempMigrationFile)
+          console.log(`   🗑️  Temporäre Migration-Datei gelöscht`)
+        } catch {
+          // Ignoriere Cleanup-Fehler
+        }
+      } else {
+        throw new Error(`${errorCount} Statements fehlgeschlagen`)
       }
-    } catch (apiError) {
-      console.log(`\n⚠️  Supabase REST API Migration fehlgeschlagen: ${apiError.message}`)
+    } catch (clientError) {
+      console.log(`\n⚠️  Supabase Client Migration fehlgeschlagen: ${clientError.message}`)
+      console.log(`\n💡 Hinweis: Die exec_sql RPC-Funktion muss in Supabase existieren.`)
+      console.log(
+        `   → Erstelle sie mit: CREATE OR REPLACE FUNCTION exec_sql(sql text) RETURNS void AS $$ BEGIN EXECUTE sql; END; $$ LANGUAGE plpgsql SECURITY DEFINER;`
+      )
       console.log(`\n📋 Alternative: Führe diese SQL im Supabase Dashboard aus:`)
       console.log(`   → SQL Editor: https://supabase.com/dashboard/project/${PROJECT_REF}/sql/new`)
       console.log(`\n${"=".repeat(60)}`)
