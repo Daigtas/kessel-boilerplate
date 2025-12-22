@@ -41,7 +41,7 @@ Ein **produktionsreifes Next.js 16 Template** mit:
 
 - Node.js 18+ (empfohlen: 20+)
 - pnpm 8+
-- Supabase-Projekt (2x: Vault + Shared Multi-Tenant Projekt)
+- Supabase-Projekt (KESSEL - enthält App-Daten + Vault)
 - API-Keys: Google Gemini, OpenAI (optional)
 
 ### 2. Installation mit kessel-cli (empfohlen)
@@ -69,7 +69,7 @@ cd kessel-boilerplate
 pnpm install
 
 # Environment-Variablen einrichten
-# 1. .env erstellen (Vault-Credentials)
+# 1. .env erstellen (KESSEL-Credentials)
 # 2. pnpm pull-env ausführen (lädt Secrets aus Supabase Vault → .env.local)
 pnpm pull-env
 
@@ -126,6 +126,29 @@ Diese Credentials sind nur für die **Entwicklung** gedacht!
 **In Production müssen diese User gelöscht oder die Passwörter geändert werden!**
 
 Siehe auch: [App Wiki - Authentifizierung](src/content/wiki.md#kapitel-7-authentifizierung-und-test-user)
+
+### 5. Cursor MCP Setup
+
+Dieses Projekt nutzt **genau einen Supabase-MCP** in Cursor:
+
+```json
+{
+  "mcpServers": {
+    "supabase_KESSEL": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ufqlocxqizmiaozkashi"
+    }
+  }
+}
+```
+
+**Wichtig:**
+
+- Der MCP verbindet sich automatisch mit der KESSEL-Datenbank
+- **Keine weiteren Supabase-MCPs hinzufügen** (Cursor-Bug bei Multi-MCP-Routing)
+- Andere Datenbanken werden über Backend-API oder SDK angesprochen
+
+→ [MCP Governance Rules](.cursor/rules/mcp-governance.mdc)
 
 ---
 

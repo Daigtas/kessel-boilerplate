@@ -1,82 +1,81 @@
-# Secrets Management - Zwei-Projekt-Architektur
+# Secrets Management - Ein-Projekt-Architektur
 
 ## Architektur-Übersicht
 
-Dieses Projekt verwendet **zwei separate Supabase-Projekte** für maximale Sicherheit:
+Dieses Projekt verwendet **ein Supabase-Projekt** für App-Daten, Auth, Storage und Secrets:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    ZWEI-PROJEKT-ARCHITEKTUR                        │
+│                    EIN-PROJEKT-ARCHITEKTUR                         │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│   ┌─────────────────────┐         ┌─────────────────────┐          │
-│   │   VAULT-PROJEKT     │         │   KESSEL-PROJEKT    │          │
-│   │   (zedhieyjlf...)   │         │   (ufqlocxqi...)    │          │
-│   ├─────────────────────┤         ├─────────────────────┤          │
-│   │ • Secrets speichern │         │ • Tabellen          │          │
-│   │ • Nur CLI-Zugriff   │         │ • Storage           │          │
-│   │ • Kein MCP!         │         │ • Auth              │          │
-│   │                     │         │ • MCP aktiv ✓       │          │
-│   └──────────┬──────────┘         └──────────┬──────────┘          │
-│              │                               │                      │
-│              ▼                               ▼                      │
-│   ┌─────────────────────┐         ┌─────────────────────┐          │
-│   │  pnpm pull-env      │         │  Supabase MCP       │          │
-│   │  (einmalig/selten)  │         │  (AI-gesteuert)     │          │
-│   └─────────────────────┘         └─────────────────────┘          │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │            KESSEL-PROJEKT (ufqlocxqizmiaozkashi)           │   │
+│   ├─────────────────────────────────────────────────────────────┤   │
+│   │ • Tabellen (profiles, themes, roles, ...)                  │   │
+│   │ • Storage (themes bucket)                                  │   │
+│   │ • Auth (Supabase Auth)                                     │   │
+│   │ • Vault (Secrets) ← Alle Secrets hier!                    │   │
+│   │ • MCP aktiv ✓                                              │   │
+│   └───────────────────────┬───────────────────────────────────┘   │
+│                           │                                         │
+│                           ▼                                         │
+│   ┌─────────────────────────────────────────────────────────────┐   │
+│   │  pnpm pull-env  +  Supabase MCP                            │   │
+│   │  (Secrets abrufen)  (AI-gesteuert)                         │   │
+│   └─────────────────────────────────────────────────────────────┘   │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-| Projekt            | Project Ref            | Zugriff               | MCP?  |
-| ------------------ | ---------------------- | --------------------- | ----- |
-| **Vault**          | `zedhieyjlfhygsfxzbze` | CLI (`pnpm pull-env`) | ✅ Ja |
-| **Daten (KESSEL)** | `ufqlocxqizmiaozkashi` | MCP + Client          | ✅ Ja |
+| Projekt    | Project Ref            | Zugriff            | MCP?  |
+| ---------- | ---------------------- | ------------------ | ----- |
+| **KESSEL** | `ufqlocxqizmiaozkashi` | CLI + MCP + Client | ✅ Ja |
 
-> **Hinweis:** Beide Projekte haben MCP-Zugriff. Der Vault wird für Secrets verwendet,
-> KESSEL für App-Daten, Auth und Storage.
+> **Hinweis:** Alle Secrets sind im KESSEL-Projekt Vault gespeichert. Das vereinfacht die Architektur und eliminiert MCP-Token-Probleme.
 
-## Warum zwei Projekte?
+## Warum ein Projekt?
 
-1. **Sicherheit**: Vault-Secrets sind vom Haupt-Backend isoliert
-2. **Minimale Angriffsfläche**: Vault wird nur via CLI angesprochen
-3. **Kontext-Effizienz**: Nur ein MCP = weniger Token-Verbrauch
-4. **Klare Trennung**: Infrastruktur (Vault) vs. Entwicklung (Daten)
+1. **Vereinfachung**: Keine zwei Projekte mehr zu verwalten
+2. **Ein MCP-Token**: Kein Umschalten zwischen Vault und Daten-Projekt
+3. **Kosten**: Nutzt nur einen Free-Tier Slot
+4. **Isolation**: Vault-Funktionen sind trotzdem sicher (nur service_role Zugriff)
 
 ---
 
 ## Dateien und Credentials
 
-### `.env` (Bootstrap - Vault-Projekt)
+### `.env` (Bootstrap - KESSEL-Projekt)
 
 ```bash
-# Bootstrap-Credentials für VAULT-Projekt
-# Wird nur von pnpm pull-env verwendet
-NEXT_PUBLIC_SUPABASE_URL=https://zedhieyjlfhygsfxzbze.supabase.co
-SERVICE_ROLE_KEY=eyJ...  # Vault Service Role Key
+# Bootstrap-Credentials für KESSEL-Projekt
+# Wird von pnpm pull-env verwendet, um Secrets aus dem Vault zu holen
+NEXT_PUBLIC_SUPABASE_URL=https://ufqlocxqizmiaozkashi.supabase.co
+SERVICE_ROLE_KEY=eyJ...  # KESSEL Service Role Key
 ```
 
 **Wichtig:**
 
 - Diese Datei ist in `.gitignore` → wird **niemals** committed
-- Enthält Credentials für das **Vault-Projekt** (nicht Daten!)
+- Enthält Credentials für das **KESSEL-Projekt** (Vault + Daten)
 - Wird nur vom `pull-env.mjs` Script verwendet
 
-### `.env.local` (Runtime - KESSEL-Projekt)
+### `.env.local` (Runtime - Generiert)
 
 ```bash
 # Generiert von: pnpm pull-env
-# Credentials für KESSEL-Projekt (App-Daten + Auth)
+# Enthält alle Secrets aus dem KESSEL-Vault
 NEXT_PUBLIC_SUPABASE_URL=https://ufqlocxqizmiaozkashi.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...      # Public Key für Client
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ... # Alias für ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY=eyJ...          # Server-only, niemals im Client!
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=eyJ...  # Public Key für Client
+GOOGLE_GENERATIVE_AI_API_KEY=...
+OPENAI_API_KEY=...
+# ... weitere Secrets
 ```
 
 **Wichtig:**
 
 - Wird **automatisch generiert** von `pnpm pull-env`
-- Enthält Credentials für das **Daten-Projekt**
+- Enthält alle Secrets aus dem KESSEL-Vault
 - In `.gitignore` → wird niemals committed
 
 ---
@@ -86,11 +85,11 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...          # Server-only, niemals im Client!
 ### 1. Projekt-Setup (einmalig)
 
 ```bash
-# 1. .env manuell erstellen mit Vault-Credentials
-echo "NEXT_PUBLIC_SUPABASE_URL=https://zedhieyjlfhygsfxzbze.supabase.co" > .env
+# 1. .env manuell erstellen mit KESSEL-Credentials
+echo "NEXT_PUBLIC_SUPABASE_URL=https://ufqlocxqizmiaozkashi.supabase.co" > .env
 echo "SERVICE_ROLE_KEY=eyJ..." >> .env
 
-# 2. Secrets aus Vault holen → .env.local generieren
+# 2. Secrets aus KESSEL-Vault holen → .env.local generieren
 pnpm pull-env
 ```
 
@@ -100,8 +99,8 @@ pnpm pull-env
 # Dev-Server starten (nutzt .env.local automatisch)
 pnpm dev
 
-# MCP kommuniziert mit Daten-Projekt
-# → Tabellen anlegen, Queries ausführen, etc.
+# MCP kommuniziert mit KESSEL-Projekt
+# → Tabellen anlegen, Queries ausführen, Secrets verwalten
 ```
 
 ### 3. Bei Secret-Änderungen
@@ -115,15 +114,13 @@ pnpm pull-env  # Aktualisiert .env.local
 
 ## MCP-Konfiguration
 
-Es gibt **zwei MCP-Server** konfiguriert:
+### Ein MCP pro Workspace (Governance-Regel)
+
+Dieses Projekt nutzt **genau einen Supabase-MCP**. Er ist immer mit der KESSEL-Datenbank verbunden.
 
 ```json
 {
   "mcpServers": {
-    "supabase_VAULT": {
-      "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=zedhieyjlfhygsfxzbze"
-    },
     "supabase_KESSEL": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=ufqlocxqizmiaozkashi"
@@ -132,10 +129,25 @@ Es gibt **zwei MCP-Server** konfiguriert:
 }
 ```
 
-**Verwendung:**
+**Wichtig:** Keine weiteren Supabase-MCP-Server in diesem Workspace aktivieren!
 
-- **VAULT:** Secrets lesen/schreiben, Secret-Rotation
-- **KESSEL:** App-Daten, Auth, Storage, tägliche Entwicklung
+Cursor hat bekannte Bugs beim Routing von Requests auf mehrere MCP-Instanzen desselben Typs. Diese Architektur umschifft das Problem.
+
+### Andere DBs ansprechen (ohne MCP)
+
+Falls du auf andere Supabase-Datenbanken zugreifen musst:
+
+- **Backend-API-Routes** (`/api/...`)
+- **Supabase SDK** (`@supabase/ssr`, `@supabase/supabase-js`)
+- **Server-Side Scripts** (`scripts/*.mjs`)
+
+```typescript
+// Beispiel: Zugriff auf INFRA-DB ohne MCP
+import { createClient } from "@supabase/supabase-js"
+const infraClient = createClient(INFRA_URL, INFRA_KEY)
+```
+
+Siehe auch: [MCP Governance Rules](../../.cursor/rules/mcp-governance.mdc)
 
 ---
 
@@ -158,12 +170,25 @@ Der `SERVICE_ROLE_KEY` ist **der mächtigste Schlüssel**. Er hat **vollständig
 
 ---
 
+## Vault-Funktionen
+
+Das KESSEL-Projekt hat folgende Vault-Funktionen:
+
+- `insert_secret(name TEXT, secret TEXT)` - Secret erstellen
+- `read_secret(secret_name TEXT)` - Secret lesen
+- `delete_secret(secret_name TEXT)` - Secret löschen
+- `get_all_secrets_for_env()` - Alle Secrets für `.env.local` exportieren
+
+**Sicherheit:** Alle Funktionen sind nur für `service_role` zugänglich.
+
+---
+
 ## Sicherheits-Checkliste
 
 - [ ] `.env` ist in `.gitignore`
 - [ ] `.env.local` ist in `.gitignore`
 - [ ] `SERVICE_ROLE_KEY` wird nur serverseitig verwendet
-- [ ] MCP zeigt auf Daten-Projekt (nicht Vault!)
+- [ ] MCP zeigt auf KESSEL-Projekt
 - [ ] Kein Client-Code importiert `SERVICE_ROLE_KEY`
 
 ---
@@ -174,36 +199,63 @@ Der `SERVICE_ROLE_KEY` ist **der mächtigste Schlüssel**. Er hat **vollständig
 # Prüfe, ob .env in Git ist (sollte NICHT sein)
 git ls-files | grep "\.env$"
 
-# Prüfe .env (Vault-Projekt)
+# Prüfe .env (KESSEL-Projekt)
 grep "supabase.co" .env
-# Sollte: zedhieyjlfhygsfxzbze (Vault) zeigen
+# Sollte: ufqlocxqizmiaozkashi (KESSEL) zeigen
 
 # Prüfe .env.local (KESSEL-Projekt)
 grep "supabase.co" .env.local
 # Sollte: ufqlocxqizmiaozkashi (KESSEL) zeigen
 
-# Prüfe ob ANON_KEY auf richtiges Projekt zeigt
-grep ANON_KEY .env.local | cut -d= -f2 | cut -d. -f2 | base64 -d | grep -o '"ref":"[^"]*"'
-# Sollte: "ref":"ufqlocxqizmiaozkashi" zeigen
+# Teste pull-env
+pnpm pull-env
+# Sollte erfolgreich sein und .env.local aktualisieren
 ```
 
-## Vault-Secrets korrigieren
+## Vault-Secrets verwalten
 
-Falls ein Secret im Vault falsch ist, kann es mit SQL korrigiert werden:
+### Secret hinzufügen (via MCP)
 
 ```sql
--- Secret im Vault aktualisieren
-SELECT vault.update_secret(
-  (SELECT id FROM vault.secrets WHERE name = 'SECRET_NAME'),
-  'NEUER_WERT',
-  'SECRET_NAME'
-);
-
--- Prüfen ob Update erfolgreich war
-SELECT name, substring(decrypted_secret, 1, 50)
-FROM vault.decrypted_secrets
-WHERE name = 'SECRET_NAME';
+SELECT vault.create_secret('SECRET_VALUE', 'SECRET_NAME');
 ```
+
+### Secret lesen (via MCP - nur service_role)
+
+```sql
+SELECT read_secret('SECRET_NAME');
+```
+
+### Secret aktualisieren
+
+```sql
+-- Altes Secret löschen
+SELECT delete_secret('SECRET_NAME');
+
+-- Neues Secret erstellen
+SELECT vault.create_secret('NEUER_WERT', 'SECRET_NAME');
+```
+
+### Alle Secrets auflisten
+
+```sql
+SELECT name, created_at, updated_at
+FROM vault.secrets
+ORDER BY name;
+```
+
+---
+
+## Migration von Zwei-Projekt-Architektur
+
+Falls du von der alten Zwei-Projekt-Architektur migrierst:
+
+1. Secrets aus altem Vault exportieren (via `pnpm pull-env` mit alter `.env`)
+2. Secrets ins KESSEL-Vault importieren (via MCP oder SQL)
+3. `.env` auf KESSEL-Projekt umstellen
+4. `pnpm pull-env` testen
+
+Siehe auch: [Migration Guide](../06_history/CHANGELOG.md)
 
 ---
 
@@ -211,3 +263,4 @@ WHERE name = 'SECRET_NAME';
 
 - [Supabase Vault Documentation](https://supabase.com/docs/guides/platform/vault)
 - [MCP Setup](./mcp-setup.md)
+- [Multi-Tenant Architektur](./multi-tenant-architektur.md)

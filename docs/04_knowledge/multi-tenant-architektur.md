@@ -13,6 +13,7 @@ Alle Kessel-Projekte teilen sich **ein** Supabase-Projekt:
 - **Projekt-Ref**: `ufqlocxqizmiaozkashi` (Name: "Kessel")
 - **URL**: `https://ufqlocxqizmiaozkashi.supabase.co`
 - **Vorteil**: Nur ein kostenloses Supabase-Projekt nötig (Free Tier Limit: 2 Projekte)
+- **Enthält**: Datenbank, Auth, Storage und **Vault (Secrets)**
 
 ### 2. Schema-Isolation
 

@@ -1,6 +1,6 @@
 # MCP Server Setup
 
-Dieses Projekt verwendet **vier MCP-Server** für erweiterte KI-Funktionalität:
+Dieses Projekt verwendet **MCP-Server** für erweiterte KI-Funktionalität in Cursor.
 
 | MCP Server             | Zweck                               | Wann nutzen               |
 | ---------------------- | ----------------------------------- | ------------------------- |
@@ -8,6 +8,31 @@ Dieses Projekt verwendet **vier MCP-Server** für erweiterte KI-Funktionalität:
 | **Next.js DevTools**   | Fehler, Routen, Logs vom Dev-Server | Bei Next.js-Entwicklung   |
 | **Cursor IDE Browser** | Browser-Automation, Screenshots     | UI-Testing, Debugging     |
 | **Supabase**           | Datenbank-Operationen               | Bei DB-Änderungen         |
+
+---
+
+## ⚠️ MCP Governance: Ein Supabase-MCP pro Workspace
+
+**Wichtige Regel:** Dieses Projekt nutzt **genau einen Supabase-MCP**!
+
+```json
+{
+  "mcpServers": {
+    "supabase_KESSEL": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=ufqlocxqizmiaozkashi"
+    }
+  }
+}
+```
+
+**Keine weiteren Supabase-MCPs hinzufügen!** Cursor hat bekannte Bugs beim Routing von Requests auf mehrere MCP-Instanzen desselben Typs.
+
+Andere Datenbanken werden über Backend-API oder SDK angesprochen, nicht über zusätzliche MCPs.
+
+→ Siehe [MCP Governance Rules](../../.cursor/rules/mcp-governance.mdc)
+
+---
 
 ## 1. Context7 MCP Server
 
@@ -86,7 +111,7 @@ Browser-Automation für UI-Testing und visuelle Überprüfung:
 
 ### Verwendung
 
-Direkte Datenbank-Interaktionen mit dem **Daten-Projekt**:
+Direkte Datenbank-Interaktionen mit dem **KESSEL-Projekt**:
 
 ```
 # AI kann DB-Operationen ausführen:
@@ -103,11 +128,14 @@ Direkte Datenbank-Interaktionen mit dem **Daten-Projekt**:
 
 ### Projekt-Referenz
 
-**Daten-Projekt:** `jpmhwyjiuodsvjowddsm`
+**KESSEL-Projekt:** `ufqlocxqizmiaozkashi`
 
-> ⚠️ **Wichtig:** Das MCP zeigt nur auf das Daten-Projekt, nicht auf das Vault-Projekt!
-> Secrets werden via CLI (`pnpm pull-env`) aus dem separaten Vault-Projekt geholt.
-> Siehe [Secrets Management](./secrets-management.md) für Details.
+Das KESSEL-Projekt enthält:
+
+- App-Daten (profiles, themes, roles, ...)
+- Auth
+- Storage
+- Vault (Secrets)
 
 ---
 
@@ -126,9 +154,9 @@ Oder in der Datei `.cursor/mcp.json` (projekt-spezifisch).
 ```json
 {
   "mcpServers": {
-    "supabase": {
+    "supabase_KESSEL": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=jpmhwyjiuodsvjowddsm"
+      "url": "https://mcp.supabase.com/mcp?project_ref=ufqlocxqizmiaozkashi"
     },
     "context7": {
       "command": "npx",
@@ -138,15 +166,15 @@ Oder in der Datei `.cursor/mcp.json` (projekt-spezifisch).
       "command": "npx",
       "args": ["-y", "next-devtools-mcp@latest"]
     },
-    "chrome-devtools": {
-      "command": "cmd",
-      "args": ["/c", "npx", "-y", "chrome-devtools-mcp@latest"]
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
     }
   }
 }
 ```
 
-> **Hinweis:** Es gibt nur EIN Supabase MCP (Daten-Projekt). Das Vault-Projekt wird via CLI angesprochen.
+> **Hinweis:** Es gibt nur EIN Supabase MCP (KESSEL-Projekt). Andere Supabase-Projekte werden via SDK angesprochen.
 
 ---
 
@@ -178,3 +206,7 @@ Einige MCP-Server benötigen Node 22+:
 ```bash
 node --version  # sollte v22+ sein
 ```
+
+### Supabase MCP Authentifizierung
+
+Der Supabase MCP verwendet OAuth (Browser-Popup). Beim ersten Mal musst du dich im Browser authentifizieren.
