@@ -67,11 +67,59 @@ export function getCurrentRoute(): string {
   return window.location.pathname
 }
 
+/**
+ * Sammelt alle verfügbaren UI-Actions aus dem DOM
+ *
+ * Liest alle Elemente mit data-ai-id Attribut und extrahiert deren Metadaten.
+ */
+export function collectAvailableActions(): Array<{
+  id: string
+  action: string
+  target?: string
+  description: string
+}> {
+  if (typeof window === "undefined") return []
+
+  try {
+    const elements = document.querySelectorAll<HTMLElement>("[data-ai-id]")
+    const actions: Array<{ id: string; action: string; target?: string; description: string }> = []
+
+    elements.forEach((element) => {
+      const id = element.getAttribute("data-ai-id")
+      const action = element.getAttribute("data-ai-action")
+      const target = element.getAttribute("data-ai-target") || undefined
+
+      if (!id || !action) return
+
+      // Versuche Beschreibung aus dem Element zu extrahieren
+      // Fallback: aria-label, title, oder Text-Content
+      const description =
+        element.getAttribute("aria-label") ||
+        element.getAttribute("title") ||
+        element.textContent?.trim().substring(0, 100) ||
+        `Action ${id}`
+
+      actions.push({
+        id,
+        action,
+        target,
+        description,
+      })
+    })
+
+    return actions
+  } catch (error) {
+    console.error("[collectAvailableActions] Failed:", error)
+    return []
+  }
+}
+
 export async function collectContext(includeScreenshot = true) {
-  const [screenshot, htmlDump, route] = await Promise.all([
+  const [screenshot, htmlDump, route, availableActions] = await Promise.all([
     includeScreenshot ? captureScreenshot() : Promise.resolve(null),
     Promise.resolve(captureHtmlDump()),
     Promise.resolve(getCurrentRoute()),
+    Promise.resolve(collectAvailableActions()),
   ])
-  return { screenshot, htmlDump, route }
+  return { screenshot, htmlDump, route, availableActions }
 }

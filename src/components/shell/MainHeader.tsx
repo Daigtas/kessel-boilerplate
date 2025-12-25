@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 import { useShell, useAssist, type AssistPanelType } from "./shell-context"
 import { Breadcrumbs } from "./Breadcrumbs"
+import { AIInteractable } from "@/components/ai/AIInteractable"
 
 /**
  * Assist Panel Button Konfiguration
@@ -72,9 +73,27 @@ export function MainHeader({
           {/* Navbar Toggle */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={toggleNavbar} className="size-8">
-                <PanelLeft className={cn("size-4", navbarCollapsed && "text-muted-foreground")} />
-              </Button>
+              <AIInteractable
+                id="toggle-navbar"
+                action="toggle"
+                target="navbar"
+                description="Klappt die Navigationsleiste ein oder aus"
+                keywords={[
+                  "navbar",
+                  "navigation",
+                  "sidebar",
+                  "seitenleiste",
+                  "menü",
+                  "menu",
+                  "einklappen",
+                  "ausklappen",
+                ]}
+                category="layout"
+              >
+                <Button variant="ghost" size="icon" onClick={toggleNavbar} className="size-8">
+                  <PanelLeft className={cn("size-4", navbarCollapsed && "text-muted-foreground")} />
+                </Button>
+              </AIInteractable>
             </TooltipTrigger>
             <TooltipContent>
               {navbarCollapsed ? "Navbar erweitern" : "Navbar minimieren"}
@@ -96,21 +115,39 @@ export function MainHeader({
           {/* Assist Panel Buttons */}
           {!hideAssistButtons && (
             <div className="flex items-center gap-1">
-              {assistButtons.map(({ type, icon: Icon, label }) => (
-                <Tooltip key={type}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={assistOpen && activePanel === type ? "secondary" : "ghost"}
-                      size="icon"
-                      onClick={() => toggleAssist(type)}
-                      className="size-8"
-                    >
-                      <Icon className="size-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{label}</TooltipContent>
-                </Tooltip>
-              ))}
+              {assistButtons.map(({ type, icon: Icon, label }) => {
+                const keywords: string[] =
+                  type === "chat"
+                    ? ["chat", "ki", "ai", "assistent", "hilfe", "help", "assist", "panel"]
+                    : type === "wiki"
+                      ? ["wiki", "dokumentation", "documentation", "hilfe", "help", "panel"]
+                      : [type, label.toLowerCase()].filter((k): k is string => k !== null)
+
+                return (
+                  <Tooltip key={type}>
+                    <TooltipTrigger asChild>
+                      <AIInteractable
+                        id={`toggle-assist-${type}`}
+                        action="toggle"
+                        target={`assist-${type}`}
+                        description={`Öffnet oder schließt das ${label}-Panel`}
+                        keywords={keywords}
+                        category="layout"
+                      >
+                        <Button
+                          variant={assistOpen && activePanel === type ? "secondary" : "ghost"}
+                          size="icon"
+                          onClick={() => toggleAssist(type)}
+                          className="size-8"
+                        >
+                          <Icon className="size-4" />
+                        </Button>
+                      </AIInteractable>
+                    </TooltipTrigger>
+                    <TooltipContent>{label}</TooltipContent>
+                  </Tooltip>
+                )
+              })}
             </div>
           )}
         </div>

@@ -25,7 +25,9 @@ import {
   captureHtmlDump,
   getCurrentRoute,
   captureScreenshot,
+  collectAvailableActions,
 } from "@/lib/ai-chat/context-collector"
+import { useAIRegistry } from "@/lib/ai/ai-registry-context"
 
 /**
  * AIChatPanel Props
@@ -62,12 +64,17 @@ const chatTransport = new AssistantChatTransport({
     const screenshot = await captureScreenshot()
     console.log("[AIChatPanel] Screenshot:", screenshot ? `${screenshot.length} chars` : "null")
 
+    // Verfügbare UI-Actions sammeln
+    const availableActions = collectAvailableActions()
+    console.log("[AIChatPanel] Available actions:", availableActions.length)
+
     const requestBody = {
       messages,
       route,
       htmlDump,
       interactions,
       screenshot,
+      availableActions,
     }
 
     console.log("[AIChatPanel] Request body keys:", Object.keys(requestBody))
@@ -83,13 +90,39 @@ const chatTransport = new AssistantChatTransport({
 export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement {
   const { pathname } = useScreenshotCache()
   const router = useRouter()
+  const { executeAction } = useAIRegistry()
 
   // Write-Tool Prefixes die DB-Änderungen auslösen
   const WRITE_TOOL_PREFIXES = ["insert_", "update_", "delete_", "create_user", "delete_user"]
 
-  // Callback für Auto-Reload nach Write-Tool-Calls
+  // Callback für Auto-Reload nach Write-Tool-Calls und UI-Actions
   const handleFinish = useCallback(
-    ({ message }: { message: { parts?: Array<{ type: string; toolName?: string }> } }) => {
+    async ({
+      message,
+    }: {
+      message: { parts?: Array<{ type: string; toolName?: string; result?: unknown }> }
+    }) => {
+      // Prüfe auf UI-Actions in Tool-Results
+      message.parts?.forEach(async (part) => {
+        if (part.type === "tool-result" && part.result && typeof part.result === "object") {
+          const result = part.result as {
+            __ui_action?: string
+            id?: string
+            [key: string]: unknown
+          }
+
+          if (result.__ui_action === "execute" && result.id) {
+            console.log("[AIChatPanel] UI-Action detected:", result.id)
+            const actionResult = await executeAction(result.id)
+            if (actionResult.success) {
+              console.log("[AIChatPanel] UI-Action executed:", actionResult.message)
+            } else {
+              console.error("[AIChatPanel] UI-Action failed:", actionResult.message)
+            }
+          }
+        }
+      })
+
       // Prüfe ob Write-Tools aufgerufen wurden
       const hasWriteToolCall = message.parts?.some(
         (part) =>
@@ -105,7 +138,7 @@ export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement
         }, 300)
       }
     },
-    [router]
+    [router, executeAction]
   )
 
   // useChatRuntime mit Transport

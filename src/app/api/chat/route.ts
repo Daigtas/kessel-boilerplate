@@ -17,6 +17,7 @@ import { openrouter } from "@/lib/ai/openrouter-provider"
 import { detectToolNeed, type RouterDecision } from "@/lib/ai/model-router"
 import { generateAllTools } from "@/lib/ai/tool-registry"
 import type { ToolExecutionContext } from "@/lib/ai/tool-executor"
+import { generateUIActionTool, type UIAction } from "@/lib/ai/special-tools"
 import { loadWikiContent } from "@/lib/ai-chat/wiki-content"
 import { createClient } from "@/utils/supabase/server"
 import type { UserInteraction } from "@/lib/ai-chat/types"
@@ -120,6 +121,7 @@ interface ChatRequestBody {
   htmlDump?: string
   route?: string
   interactions?: UserInteraction[]
+  availableActions?: UIAction[]
   model?: string
   dryRun?: boolean
 }
@@ -225,7 +227,8 @@ export async function POST(req: Request) {
 
     // 3. Request parsen
     const body: ChatRequestBody = await req.json()
-    const { messages, screenshot, htmlDump, route, interactions, model, dryRun } = body
+    const { messages, screenshot, htmlDump, route, interactions, availableActions, model, dryRun } =
+      body
 
     if (!messages || messages.length === 0) {
       return Response.json({ error: "No messages provided" }, { status: 400 })
@@ -274,6 +277,19 @@ export async function POST(req: Request) {
       tools = await generateAllTools(toolContext)
       availableToolNames = Object.keys(tools)
       console.log("[Chat API] Tools loaded:", availableToolNames.join(", ") || "none")
+    }
+
+    // 6.5. UI-Action Tool hinzufügen wenn Actions verfügbar sind
+    // UI-Actions sind immer verfügbar, auch ohne Tool-Routing
+    if (availableActions && availableActions.length > 0) {
+      const uiActionTool = generateUIActionTool(availableActions)
+      if (tools) {
+        Object.assign(tools, uiActionTool)
+      } else {
+        tools = uiActionTool
+      }
+      availableToolNames.push(...Object.keys(uiActionTool))
+      console.log("[Chat API] UI-Action Tool loaded:", availableActions.length, "actions available")
     }
 
     // 7. Modell aus Router-Decision verwenden (oder explizit überschrieben)

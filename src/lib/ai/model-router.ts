@@ -150,16 +150,126 @@ const DB_KEYWORDS = [
 ]
 
 /**
+ * UI-Keywords die auf UI-Navigation/Aktionen hindeuten
+ */
+const UI_KEYWORDS = [
+  // Deutsch - Navigation
+  "navigiere",
+  "gehe zu",
+  "öffne",
+  "zeig mir",
+  "zeige",
+  "öffne die",
+  "gehe zur",
+  "gehe zum",
+  "gehe auf",
+  "navigiere zu",
+  "navigiere zur",
+  "navigiere zum",
+  // Deutsch - Panel/UI
+  "klappe",
+  "klapp",
+  "schließe",
+  "schließ",
+  "verstecke",
+  "versteck",
+  "toggle",
+  "umschalten",
+  "sidebar",
+  "seitenleiste",
+  "menü",
+  "menu",
+  "panel",
+  // Englisch
+  "navigate",
+  "go to",
+  "open",
+  "show",
+  "show me",
+  "toggle",
+  "close",
+  "hide",
+  "sidebar",
+  "menu",
+  "panel",
+]
+
+/**
+ * Vision-Keywords die IMMER zu Gemini Flash routen (höchste Priorität)
+ * Diese haben Vorrang vor Tool-Routing, da Claude keine Bilder verarbeiten kann.
+ */
+const VISION_KEYWORDS = [
+  // Deutsch - Direkte Fragen
+  "siehst du",
+  "erkennst du",
+  "was siehst du",
+  "was zeigt",
+  "was ist auf dem",
+  "beschreibe was",
+  "beschreib was",
+  "kannst du sehen",
+  "kannst du das sehen",
+  "schau dir",
+  "schau mal",
+  "guck dir",
+  "guck mal",
+  // Deutsch - Screenshot/Bild Begriffe
+  "screenshot",
+  "bildschirm",
+  "ansicht",
+  "auf dem bild",
+  "im bild",
+  "das bild",
+  "dieses bild",
+  // Deutsch - Visuelle Analyse
+  "visuell",
+  "optisch",
+  "aussehen",
+  "sieht aus",
+  "farbe",
+  "farben",
+  "layout",
+  "design",
+  "ui",
+  "oberfläche",
+  // Englisch
+  "do you see",
+  "can you see",
+  "what do you see",
+  "what is on",
+  "describe what",
+  "look at",
+  "looking at",
+  "the image",
+  "this image",
+  "on screen",
+  "visual",
+  "visually",
+]
+
+/**
  * Analysiert ob eine Nachricht Tool-Calling erfordert
  */
 function analyzeForToolNeed(text: string): {
   hasEntity: boolean
   hasCrud: boolean
   hasDbRef: boolean
+  hasVisionRef: boolean
+  hasUIRef: boolean
   crudType: string | null
   matchedEntity: string | null
+  matchedVisionKeyword: string | null
+  matchedUIKeyword: string | null
 } {
   const lowerText = text.toLowerCase()
+
+  // Vision-Check (höchste Priorität!)
+  const matchedVisionKeyword = VISION_KEYWORDS.find((k) => lowerText.includes(k)) ?? null
+  const hasVisionRef = matchedVisionKeyword !== null
+
+  // UI-Check (Navigation, Panel-Toggles)
+  const matchedUIKeyword = UI_KEYWORDS.find((k) => lowerText.includes(k)) ?? null
+  const hasUIRef = matchedUIKeyword !== null
 
   // Entity-Check
   const matchedEntity = DB_ENTITIES.find((e) => lowerText.includes(e)) ?? null
@@ -179,17 +289,28 @@ function analyzeForToolNeed(text: string): {
   // DB-Reference-Check
   const hasDbRef = DB_KEYWORDS.some((k) => lowerText.includes(k))
 
-  return { hasEntity, hasCrud, hasDbRef, crudType, matchedEntity }
+  return {
+    hasEntity,
+    hasCrud,
+    hasDbRef,
+    hasVisionRef,
+    hasUIRef,
+    crudType,
+    matchedEntity,
+    matchedVisionKeyword,
+    matchedUIKeyword,
+  }
 }
 
 /**
  * Hauptfunktion: Entscheidet welches Modell verwendet werden soll
  *
- * Logik:
+ * Logik (Priorität von oben nach unten):
  * 1. Wenn keine User-Nachricht → Chat-Modell
- * 2. Wenn explizite DB-Referenz → Tool-Modell
- * 3. Wenn Entity + CRUD-Keyword → Tool-Modell
- * 4. Sonst → Chat-Modell
+ * 2. Wenn Vision-Keywords → Chat-Modell (Gemini für Screenshots!) ⭐ HÖCHSTE PRIORITÄT
+ * 3. Wenn explizite DB-Referenz → Tool-Modell
+ * 4. Wenn Entity + CRUD-Keyword → Tool-Modell
+ * 5. Sonst → Chat-Modell
  *
  * @param messages - Nachrichtenverlauf
  * @returns RouterDecision mit Modell und Konfiguration
@@ -209,6 +330,26 @@ export function detectToolNeed(messages: CoreMessage[]): RouterDecision {
 
   const text = extractTextFromMessage(lastUserMessage)
   const analysis = analyzeForToolNeed(text)
+
+  // ⭐ HÖCHSTE PRIORITÄT: Vision-Keywords → IMMER Gemini Flash (Claude kann keine Bilder!)
+  if (analysis.hasVisionRef) {
+    return {
+      needsTools: false,
+      reason: `vision-request:${analysis.matchedVisionKeyword}`,
+      model: DEFAULT_CHAT_MODEL,
+      maxSteps: 1,
+    }
+  }
+
+  // UI-Keywords → Tool-Modell (braucht execute_ui_action Tool)
+  if (analysis.hasUIRef) {
+    return {
+      needsTools: true,
+      reason: `ui-action:${analysis.matchedUIKeyword}`,
+      model: DEFAULT_TOOL_MODEL,
+      maxSteps: 8,
+    }
+  }
 
   // Explizite DB-Referenz → Tool-Modell
   if (analysis.hasDbRef) {

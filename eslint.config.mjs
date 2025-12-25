@@ -10,6 +10,7 @@ import noRawFontNames from "./eslint/rules/no-raw-font-names.js"
 import noHardcodedTailwind from "./eslint/rules/no-hardcoded-tailwind.js"
 import useDesignSystemComponents from "./eslint/rules/use-design-system-components.js"
 import noMiddlewareFile from "./eslint/rules/no-middleware-file.js"
+import aiComponentCompliance from "./eslint/rules/ai-component-compliance.js"
 
 /**
  * Lokales Plugin für projektspezifische Regeln.
@@ -28,6 +29,7 @@ const localPlugin = {
     "no-hardcoded-tailwind": noHardcodedTailwind,
     "use-design-system-components": useDesignSystemComponents,
     "no-middleware-file": noMiddlewareFile,
+    "ai-component-compliance": aiComponentCompliance,
   },
 }
 
@@ -107,6 +109,33 @@ const eslintConfig = defineConfig([
           checkLinks: true,
         },
       ],
+    },
+  },
+  // AI Component Governance: Prüft AIInteractable Compliance
+  {
+    files: ["src/**/*.tsx", "src/**/*.ts"],
+    ignores: [
+      "src/components/ui/**",
+      "**/__tests__/**",
+      "**/*.test.tsx",
+      "**/*.test.ts",
+      "**/*.spec.tsx",
+      "**/*.spec.ts",
+    ],
+    plugins: {
+      local: localPlugin,
+    },
+    rules: {
+      // Prüft dass AIInteractable Komponenten im Manifest registriert sind
+      "local/ai-component-compliance": "error",
+    },
+  },
+  // ESLint-Regel-Dateien ausschließen (dürfen require() verwenden)
+  {
+    files: ["eslint/**/*.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "import/no-anonymous-default-export": "off",
     },
   },
   // Prettier Config muss zuletzt kommen, um andere Regeln zu überschreiben

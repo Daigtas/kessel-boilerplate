@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.11.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm validate:ai && next build",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -26,6 +26,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "validate:themes": "tsx scripts/validate-themes.ts",
+    "validate:ai": "tsx scripts/validate-ai-manifest.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

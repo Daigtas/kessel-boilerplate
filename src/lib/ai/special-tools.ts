@@ -265,7 +265,64 @@ export function generateSpecialTools(ctx: ToolExecutionContext): ToolSet {
 }
 
 /**
+ * UI Action aus dem Client
+ */
+export interface UIAction {
+  id: string
+  action: string
+  target?: string
+  description: string
+}
+
+/**
+ * Generiert das execute_ui_action Tool
+ *
+ * Ermöglicht der KI, UI-Aktionen auszuführen (Navigation, Panel-Toggles, etc.)
+ */
+function executeUIActionTool(availableActions: UIAction[]): ToolSet {
+  if (availableActions.length === 0) {
+    return {}
+  }
+
+  // Erstelle Enum der verfügbaren Action-IDs
+  const actionIds = availableActions.map((a) => a.id)
+
+  return {
+    execute_ui_action: tool({
+      description: `Führt eine UI-Aktion aus. Verfügbare Aktionen: ${availableActions.map((a) => `${a.id} (${a.description})`).join(", ")}`,
+      inputSchema: z.object({
+        action_id: z
+          .enum(actionIds as [string, ...string[]])
+          .describe("ID der auszuführenden Aktion"),
+      }),
+      execute: async ({ action_id }) => {
+        const action = availableActions.find((a) => a.id === action_id)
+        if (!action) {
+          throw new Error(`Action "${action_id}" nicht gefunden`)
+        }
+
+        return {
+          __ui_action: "execute",
+          id: action_id,
+          description: action.description,
+          message: `Führe Aktion aus: ${action.description}`,
+        }
+      },
+    }),
+  }
+}
+
+/**
+ * Generiert UI-Action Tool aus verfügbaren Actions
+ *
+ * @param availableActions - Liste der verfügbaren UI-Actions vom Client
+ */
+export function generateUIActionTool(availableActions: UIAction[]): ToolSet {
+  return executeUIActionTool(availableActions)
+}
+
+/**
  * Liste aller verfügbaren Special Tools (für Dokumentation/System Prompt)
  */
-export const SPECIAL_TOOL_NAMES = ["create_user", "delete_user"] as const
+export const SPECIAL_TOOL_NAMES = ["create_user", "delete_user", "execute_ui_action"] as const
 export type SpecialToolName = (typeof SPECIAL_TOOL_NAMES)[number]

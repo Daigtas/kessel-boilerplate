@@ -95,25 +95,25 @@ flowchart TB
         Chat[AIChatPanel]
         DataSourcesUI[DataSources UI]
     end
-    
+
     subgraph api [API Layer]
         ChatRoute["/api/ai/chat"]
         DSRoute["/api/ai/datasources"]
     end
-    
+
     subgraph services [Service Layer]
         OpenRouter[OpenRouter Provider]
         ToolRegistry[Tool Registry]
         ToolExecutor[Tool Executor]
     end
-    
+
     subgraph db [Database]
         AIDatasources[ai_datasources]
         AIToolCalls[ai_tool_calls]
         AIModels[ai_models]
         PublicTables[public.* Tabellen]
     end
-    
+
     Chat --> ChatRoute
     DataSourcesUI --> DSRoute
     ChatRoute --> OpenRouter
@@ -124,8 +124,6 @@ flowchart TB
     ToolExecutor --> AIToolCalls
     DSRoute --> AIDatasources
 ```
-
-
 
 ## Kernentscheidungen
 
@@ -216,7 +214,7 @@ Neue Datei `supabase/migrations/018_ai_datasources.sql`:
 - RLS Policies (Admin-only für Verwaltung)
 - Helper-Funktion `get_table_columns` für Schema-Introspection
 
-### 2.3 Auto-Discovery für public.* Tabellen
+### 2.3 Auto-Discovery für public.\* Tabellen
 
 Funktion in Migration:
 

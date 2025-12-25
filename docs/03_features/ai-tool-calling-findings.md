@@ -316,7 +316,47 @@ ${availableTools.map((t) => `- ${t}`).join("\n")}
 
 ---
 
-## 10. Troubleshooting
+## 10. UI-Action Tools
+
+### execute_ui_action Tool
+
+Das Tool wird dynamisch aus verfügbaren UI-Actions generiert:
+
+```typescript
+// In special-tools.ts
+export function generateUIActionTool(availableActions: UIAction[]): ToolSet {
+  // Generiert execute_ui_action Tool mit Enum der Action-IDs
+}
+```
+
+### Action-Handler Pattern
+
+AIChatPanel erkennt UI-Actions über `__ui_action` Marker:
+
+```typescript
+// In AIChatPanel.tsx
+if (result.__ui_action === "execute" && result.id) {
+  await executeAction(result.id)
+}
+```
+
+### Registry-Integration
+
+Actions werden zur Laufzeit registriert:
+
+```typescript
+// Komponente registriert sich automatisch
+<AIInteractable id="nav-users" ...>
+  <Link>Users</Link>
+</AIInteractable>
+
+// Registry kann Action ausführen
+registry.executeAction("nav-users") // Klickt Link
+```
+
+Siehe auch: [AI Component Governance Dokumentation](./ai-component-governance.md)
+
+## 11. Troubleshooting
 
 ### "result.toDataStreamResponse is not a function"
 
@@ -333,3 +373,9 @@ ${availableTools.map((t) => `- ${t}`).join("\n")}
 ### Tool wird angekündigt aber nicht aufgerufen
 
 → System-Prompt expliziter machen: "RUFE das Tool SOFORT auf"
+
+### UI-Action wird nicht ausgeführt
+
+→ Prüfe ob AIInteractable gerendert wird (data-ai-id im DOM)
+→ Prüfe ob AIRegistryProvider vorhanden ist
+→ Prüfe ob id im Manifest registriert ist
