@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { createClient } from "@/utils/supabase/client"
 import { navigationConfig, type NavItem, type NavSection } from "@/config/navigation"
 import type { UserRole } from "./auth-context"
+import { useAuth } from "./auth-context"
 
 /** Permission für ein Modul - jetzt mit dynamischen Rollen */
 interface ModulePermission {
@@ -88,6 +89,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }): Reac
   const [isLoaded, setIsLoaded] = useState(false)
   const supabase = createClient()
 
+  // WICHTIG: Wir hören auf Auth-Änderungen um Permissions neu zu laden
+  const { user, isAuthenticated } = useAuth()
+
   const loadPermissions = useCallback(async () => {
     try {
       // Lade Berechtigungen aus Junction-Tabelle mit JOIN zu roles
@@ -154,10 +158,12 @@ export function PermissionsProvider({ children }: { children: ReactNode }): Reac
     }
   }, [supabase])
 
-  // Initial laden
+  // Laden bei Mount UND bei User-Wechsel (z.B. Logout → Login als anderer User)
   useEffect(() => {
+    // Reset isLoaded bei User-Wechsel für korrektes Loading-Feedback
+    setIsLoaded(false)
     loadPermissions()
-  }, [loadPermissions])
+  }, [loadPermissions, user?.id, isAuthenticated])
 
   /**
    * Prüft ob ein Modul für eine Rolle sichtbar ist.

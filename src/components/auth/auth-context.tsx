@@ -17,6 +17,7 @@ export interface User {
   role: UserRole
   roleId?: string // UUID der Rolle aus roles Tabelle
   createdAt?: string // ISO timestamp string
+  themePreference?: string // Bevorzugtes Theme des Users
 }
 
 /** Auth Context Interface */
@@ -55,6 +56,7 @@ async function loadUserProfile(supabaseUser: SupabaseUser): Promise<User> {
       created_at,
       role,
       role_id,
+      theme_preference,
       roles:role_id (
         name,
         display_name
@@ -115,6 +117,7 @@ async function loadUserProfile(supabaseUser: SupabaseUser): Promise<User> {
     role: roleName as UserRole,
     roleId: roleId,
     createdAt: profile?.created_at || undefined,
+    themePreference: profile?.theme_preference || undefined,
   }
 }
 

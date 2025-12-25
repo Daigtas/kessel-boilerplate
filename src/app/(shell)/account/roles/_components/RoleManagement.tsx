@@ -218,6 +218,28 @@ export function RoleManagement({
     setError(null)
 
     try {
+      // 1. Finde die Default-Rolle ('user')
+      const { data: defaultRole, error: roleError } = await supabase
+        .from("roles")
+        .select("id")
+        .eq("name", "user")
+        .single()
+
+      if (roleError || !defaultRole) {
+        throw new Error("Default-Rolle 'user' nicht gefunden")
+      }
+
+      // 2. Setze alle User mit dieser Rolle auf die Default-Rolle
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ role_id: defaultRole.id })
+        .eq("role_id", roleId)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      // 3. Jetzt die Rolle löschen
       const { error: deleteError } = await supabase.from("roles").delete().eq("id", roleId)
 
       if (deleteError) {

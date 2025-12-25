@@ -2,7 +2,7 @@
 
 > **Status:** 📋 Geplant  
 > **Priorität:** Medium  
-> **Abhängigkeiten:** AI Tool-Calling System
+> **Abhängigkeiten:** AI Tool-Calling System, Theme-Preference Persistence (Phase 0)
 
 ## Übersicht
 
@@ -14,9 +14,83 @@ Der AI-Chatbot soll in der Lage sein, Design-Tokens (Farben, Radii, Spacing, etc
 
 ---
 
-## Aktueller Stand
+## Phase 0: Theme-Preference Persistence ✅
+
+> **Status:** ✅ Implementiert  
+> **Implementiert am:** 2024-12-25
 
 ### Problem
+
+Bevor Themes vom AI-Chatbot bearbeitet werden können, muss das **aktive Theme** des Users persistent gespeichert werden. Ohne diese Grundlage wäre unklar, welches Theme der AI bearbeiten soll.
+
+### Architektur-Entscheidung: Warum Hybrid (localStorage + DB)?
+
+**Das Timing-Problem bei DB-only:**
+
+```
+1. HTML rendert (Server) → Theme unbekannt
+2. React hydrates
+3. Auth passiert → User bekannt
+4. DB-Query → Theme laden
+5. Theme setzen → FLASH! ⚡
+```
+
+**Lösung: localStorage als Cache, DB als Source of Truth**
+
+```
+1. FOUC-Script (im <head>) → localStorage lesen → Theme sofort setzen
+2. React hydrates → Kein Flash!
+3. Auth passiert → DB-Preference laden
+4. localStorage synchronisieren (falls anders)
+```
+
+### Implementierung
+
+| Datei                         | Änderung                                      |
+| ----------------------------- | --------------------------------------------- |
+| `auth-context.tsx`            | `theme_preference` im Profile-Select          |
+| `auth-context.tsx`            | User-Interface um `themePreference` erweitert |
+| `use-theme-sync-with-user.ts` | Neuer Hook für bidirektionale Sync            |
+| `ClientProviders.tsx`         | `ThemeSyncProvider` integriert                |
+
+### Sync-Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        LOGIN                                 │
+├─────────────────────────────────────────────────────────────┤
+│ 1. Auth lädt Profile inkl. theme_preference                 │
+│ 2. ThemeSyncProvider erkennt User-Änderung                  │
+│ 3. Wenn DB-Theme ≠ aktuelles Theme → setTheme()            │
+│ 4. localStorage wird automatisch aktualisiert               │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                    THEME-WECHSEL                            │
+├─────────────────────────────────────────────────────────────┤
+│ 1. User wählt neues Theme (UI oder AI)                      │
+│ 2. setTheme() setzt localStorage + data-theme              │
+│ 3. ThemeSyncProvider erkennt Theme-Änderung                 │
+│ 4. UPDATE profiles SET theme_preference = '...'            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Datenbank
+
+Das Feld `theme_preference` existiert bereits in der `profiles`-Tabelle:
+
+```sql
+-- Migration 021_profiles_theme_preference.sql
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS theme_preference TEXT DEFAULT 'default';
+
+COMMENT ON COLUMN public.profiles.theme_preference IS
+  'Bevorzugtes Theme des Users (Theme-ID aus themes Tabelle)';
+```
+
+---
+
+## Phase 1: Aktueller Stand (CSS in Storage)
 
 Design-Tokens sind aktuell als **CSS-String** im Supabase Storage gespeichert:
 
@@ -66,7 +140,7 @@ Der AI-Chatbot kann diese CSS-Dateien nicht strukturiert bearbeiten, da:
 
 ---
 
-## Lösung: `theme_tokens` Tabelle
+## Phase 2: `theme_tokens` Tabelle (Geplant)
 
 ### Konzept
 
@@ -314,25 +388,32 @@ Beim Ändern von Design-Tokens beachte:
 
 ## Implementierungsplan
 
-### Phase 1: Datenbank (1-2h)
+### Phase 0: Theme-Preference Persistence ✅
+
+- [x] Migration für `theme_preference` Spalte
+- [x] `auth-context.tsx`: Lade theme_preference mit Profil
+- [x] `use-theme-sync-with-user.ts`: Bidirektionaler Sync-Hook
+- [x] `ClientProviders.tsx`: ThemeSyncProvider integriert
+
+### Phase 2a: Datenbank (1-2h)
 
 - [ ] Migration für `theme_tokens` Tabelle
 - [ ] RLS Policies
 - [ ] Seed-Daten für Default-Theme
 
-### Phase 2: CSS-Generierung (2-3h)
+### Phase 2b: CSS-Generierung (2-3h)
 
 - [ ] Edge Function oder Trigger für CSS-Generierung
 - [ ] Storage-Upload nach Token-Änderung
 - [ ] Cache-Invalidierung
 
-### Phase 3: AI Integration (1h)
+### Phase 2c: AI Integration (1h)
 
 - [ ] `theme_tokens` als AI Datasource aktivieren
 - [ ] System-Prompt erweitern
 - [ ] Validierung für Token-Werte
 
-### Phase 4: UI (Optional, 2-3h)
+### Phase 3: UI (Optional, 2-3h)
 
 - [ ] Token-Editor im Theme-Manager
 - [ ] Live-Vorschau beim Bearbeiten

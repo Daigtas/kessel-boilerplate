@@ -26,6 +26,7 @@ import {
 import { useShell } from "./shell-context"
 import { useAuth, usePermissions } from "@/components/auth"
 import { navigationConfig, appConfig, type NavItem, type NavSection } from "@/config/navigation"
+import { AIInteractable } from "@/components/ai/AIInteractable"
 
 /** Typ für die isVisible Funktion */
 type IsVisibleFn = (item: NavItem | NavSection) => boolean
@@ -100,14 +101,32 @@ export function Navbar(): React.ReactElement {
               {/* Collapse Toggle - Chevron */}
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleNavbar}
-                    className="text-sidebar-foreground hover:bg-sidebar-accent size-6 shrink-0"
+                  <AIInteractable
+                    id="toggle-navbar"
+                    action="toggle"
+                    target="navbar"
+                    description="Klappt die Navigationsleiste ein oder aus"
+                    keywords={[
+                      "navbar",
+                      "navigation",
+                      "sidebar",
+                      "seitenleiste",
+                      "menü",
+                      "menu",
+                      "einklappen",
+                      "ausklappen",
+                    ]}
+                    category="layout"
                   >
-                    <ChevronLeft className="size-4" />
-                  </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleNavbar}
+                      className="text-sidebar-foreground hover:bg-sidebar-accent size-6 shrink-0"
+                    >
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                  </AIInteractable>
                 </TooltipTrigger>
                 <TooltipContent side="right">Navbar minimieren</TooltipContent>
               </Tooltip>
@@ -355,33 +374,57 @@ function NavItemComponent({
     }
 
     // Item ohne Children: Tooltip + Link
+    const keywords = [
+      item.label.toLowerCase(),
+      item.label.toLowerCase().replace(/\s+/g, "-"),
+      item.id.toLowerCase(),
+    ]
+
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           {item.href ? (
-            <Link href={item.href}>
+            <AIInteractable
+              id={`nav-${item.id}`}
+              action="navigate"
+              target={item.href}
+              description={`Navigiert zu ${item.label}`}
+              keywords={keywords}
+              category="navigation"
+            >
+              <Link href={item.href}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-10",
+                    isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
+                  )}
+                >
+                  <Icon className="size-5 transition-transform duration-200" />
+                </Button>
+              </Link>
+            </AIInteractable>
+          ) : item.isAction ? (
+            <AIInteractable
+              id={`nav-${item.id}`}
+              action="trigger"
+              target={item.id}
+              description={item.label}
+              keywords={keywords}
+              category="navigation"
+            >
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn(
-                  "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-10",
-                  isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
-                )}
+                className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-10"
+                onClick={() => {
+                  if (item.id === "account-logout") onLogout()
+                }}
               >
                 <Icon className="size-5 transition-transform duration-200" />
               </Button>
-            </Link>
-          ) : item.isAction ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground size-10"
-              onClick={() => {
-                if (item.id === "account-logout") onLogout()
-              }}
-            >
-              <Icon className="size-5 transition-transform duration-200" />
-            </Button>
+            </AIInteractable>
           ) : (
             <Button
               variant="ghost"
@@ -460,20 +503,36 @@ function NavItemComponent({
         ? user.name || user.email?.split("@")[0] || "User"
         : item.label
 
+    // Generiere Keywords aus Label (DE + EN)
+    const keywords = [
+      item.label.toLowerCase(),
+      item.label.toLowerCase().replace(/\s+/g, "-"),
+      item.id.toLowerCase(),
+    ]
+
     return (
-      <Link href={item.href}>
-        <Button
-          variant="ghost"
-          className={cn(
-            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full justify-start gap-2",
-            isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
-            level > 0 && "pl-8"
-          )}
-        >
-          <Icon className="size-4 shrink-0 transition-transform duration-200" />
-          <span className="truncate text-sm transition-opacity duration-200">{displayLabel}</span>
-        </Button>
-      </Link>
+      <AIInteractable
+        id={`nav-${item.id}`}
+        action="navigate"
+        target={item.href}
+        description={`Navigiert zu ${item.label}`}
+        keywords={keywords}
+        category="navigation"
+      >
+        <Link href={item.href}>
+          <Button
+            variant="ghost"
+            className={cn(
+              "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full justify-start gap-2",
+              isActive && "bg-sidebar-accent text-sidebar-accent-foreground",
+              level > 0 && "pl-8"
+            )}
+          >
+            <Icon className="size-4 shrink-0 transition-transform duration-200" />
+            <span className="truncate text-sm transition-opacity duration-200">{displayLabel}</span>
+          </Button>
+        </Link>
+      </AIInteractable>
     )
   }
 
@@ -487,18 +546,34 @@ function NavItemComponent({
       }
     }
 
+    // Generiere Keywords aus Label
+    const keywords = [
+      item.label.toLowerCase(),
+      item.label.toLowerCase().replace(/\s+/g, "-"),
+      item.id.toLowerCase(),
+    ]
+
     return (
-      <Button
-        variant="ghost"
-        className={cn(
-          "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full justify-start gap-2",
-          level > 0 && "pl-8"
-        )}
-        onClick={handleAction}
+      <AIInteractable
+        id={`nav-${item.id}`}
+        action="trigger"
+        target={item.id}
+        description={item.label}
+        keywords={keywords}
+        category="navigation"
       >
-        <Icon className="size-4 shrink-0 transition-transform duration-200" />
-        <span className="truncate text-sm transition-opacity duration-200">{item.label}</span>
-      </Button>
+        <Button
+          variant="ghost"
+          className={cn(
+            "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-full justify-start gap-2",
+            level > 0 && "pl-8"
+          )}
+          onClick={handleAction}
+        >
+          <Icon className="size-4 shrink-0 transition-transform duration-200" />
+          <span className="truncate text-sm transition-opacity duration-200">{item.label}</span>
+        </Button>
+      </AIInteractable>
     )
   }
 
@@ -552,26 +627,59 @@ function CollapsedDropdownItem({
 
   // Direkter Link
   if (item.href) {
+    const keywords = [
+      item.label.toLowerCase(),
+      item.label.toLowerCase().replace(/\s+/g, "-"),
+      item.id.toLowerCase(),
+    ]
+
     return (
       <DropdownMenuItem asChild className={cn(isActive && "bg-accent")}>
-        <Link href={item.href}>
-          <Icon className="size-4" />
-          <span>{item.label}</span>
-        </Link>
+        <AIInteractable
+          id={`nav-${item.id}`}
+          action="navigate"
+          target={item.href}
+          description={`Navigiert zu ${item.label}`}
+          keywords={keywords}
+          category="navigation"
+        >
+          <Link href={item.href}>
+            <Icon className="size-4" />
+            <span>{item.label}</span>
+          </Link>
+        </AIInteractable>
       </DropdownMenuItem>
     )
   }
 
   // Action Item (z.B. Logout)
   if (item.isAction) {
+    const keywords = [
+      item.label.toLowerCase(),
+      item.label.toLowerCase().replace(/\s+/g, "-"),
+      item.id.toLowerCase(),
+    ]
+
     return (
-      <DropdownMenuItem
-        onClick={() => {
-          if (item.id === "account-logout") onLogout()
-        }}
-      >
-        <Icon className="size-4" />
-        <span>{item.label}</span>
+      <DropdownMenuItem asChild>
+        <AIInteractable
+          id={`nav-${item.id}`}
+          action="trigger"
+          target={item.id}
+          description={item.label}
+          keywords={keywords}
+          category="navigation"
+        >
+          <div
+            onClick={() => {
+              if (item.id === "account-logout") onLogout()
+            }}
+            className="flex items-center gap-2"
+          >
+            <Icon className="size-4" />
+            <span>{item.label}</span>
+          </div>
+        </AIInteractable>
       </DropdownMenuItem>
     )
   }
