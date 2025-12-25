@@ -14,7 +14,8 @@
 
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { AssistantRuntimeProvider } from "@assistant-ui/react"
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk"
 import { cn } from "@/lib/utils"
@@ -81,6 +82,16 @@ const chatTransport = new AssistantChatTransport({
  */
 export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement {
   const { pathname } = useScreenshotCache()
+  const router = useRouter()
+
+  // Callback für Auto-Reload nach Tool-Calls
+  const handleFinish = useCallback(() => {
+    // Kurze Verzögerung für DB-Konsistenz, dann Seite refreshen
+    setTimeout(() => {
+      console.log("[AIChatPanel] Chat finished, refreshing page data...")
+      router.refresh()
+    }, 300)
+  }, [router])
 
   // useChatRuntime mit Transport
   const runtime = useChatRuntime({
@@ -88,6 +99,7 @@ export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement
     onError: (error) => {
       console.error("[AIChatPanel] Chat onError:", error)
     },
+    onFinish: handleFinish,
   })
 
   // Log route changes
