@@ -55,11 +55,7 @@ const ctx = await getTestContext("admin", false)
 Erstellt einen Test-User in Supabase Auth:
 
 ```typescript
-const { userId, sessionToken } = await createTestUser(
-  "test@example.com",
-  "password123",
-  "admin"
-)
+const { userId, sessionToken } = await createTestUser("test@example.com", "password123", "admin")
 ```
 
 #### `cleanupTestData(tableName, ids)`
@@ -124,9 +120,13 @@ it("sollte neuen User anlegen können", async () => {
   const roleId = rolesResult.data[0].id
 
   // 2. User anlegen
-  const result = await executeTool("insert_profiles", {
-    data: { email: "test@example.com", display_name: "Test User", role: "user" }
-  }, ctx)
+  const result = await executeTool(
+    "insert_profiles",
+    {
+      data: { email: "test@example.com", display_name: "Test User", role: "user" },
+    },
+    ctx
+  )
 
   assertToolSuccess(result)
 })
@@ -137,14 +137,18 @@ it("sollte neuen User anlegen können", async () => {
 ```typescript
 it("sollte Bug Report erstellen können", async () => {
   const bugData = getTestBugData()
-  
-  const result = await executeTool("insert_bugs", {
-    data: {
-      title: bugData.title,
-      description: bugData.description,
-      severity: bugData.severity,
-    }
-  }, ctx)
+
+  const result = await executeTool(
+    "insert_bugs",
+    {
+      data: {
+        title: bugData.title,
+        description: bugData.description,
+        severity: bugData.severity,
+      },
+    },
+    ctx
+  )
 
   assertToolSuccess(result)
   expect(result.data.title).toBe(bugData.title)
@@ -156,16 +160,20 @@ it("sollte Bug Report erstellen können", async () => {
 ```typescript
 it("sollte Bug als gelöst markieren können - als Admin", async () => {
   const adminContext = await getTestContext("admin")
-  
+
   // Bug erstellen
   const createResult = await executeTool("insert_bugs", { data: bugData }, adminContext)
   const bugId = createResult.data.id
 
   // Bug updaten
-  const updateResult = await executeTool("update_bugs", {
-    filters: { id: bugId },
-    data: { status: "fixed" }
-  }, adminContext)
+  const updateResult = await executeTool(
+    "update_bugs",
+    {
+      filters: { id: bugId },
+      data: { status: "fixed" },
+    },
+    adminContext
+  )
 
   assertToolSuccess(updateResult)
   expect(updateResult.data.status).toBe("fixed")
@@ -177,14 +185,18 @@ it("sollte Bug als gelöst markieren können - als Admin", async () => {
 ```typescript
 it("sollte Feature Request erstellen können", async () => {
   const featureData = getTestFeatureData()
-  
-  const result = await executeTool("insert_features", {
-    data: {
-      title: featureData.title,
-      description: featureData.description,
-      status: "planned"
-    }
-  }, ctx)
+
+  const result = await executeTool(
+    "insert_features",
+    {
+      data: {
+        title: featureData.title,
+        description: featureData.description,
+        status: "planned",
+      },
+    },
+    ctx
+  )
 
   assertToolSuccess(result)
 })
@@ -195,7 +207,7 @@ it("sollte Feature Request erstellen können", async () => {
 ```typescript
 it("sollte Theme abfragen können", async () => {
   const result = await executeTool("query_themes", { limit: 10 }, ctx)
-  
+
   assertToolSuccess(result)
   expect(Array.isArray(result.data)).toBe(true)
 })
@@ -261,13 +273,17 @@ export function getTestNewToolData() {
 describe("New Tool", () => {
   it("sollte New Tool verwenden können", async () => {
     const data = getTestNewToolData()
-    
-    const result = await executeTool("insert_new_table", {
-      data: data
-    }, testContext)
+
+    const result = await executeTool(
+      "insert_new_table",
+      {
+        data: data,
+      },
+      testContext
+    )
 
     assertToolSuccess(result)
-    
+
     // Cleanup
     const inserted = Array.isArray(result.data) ? result.data[0] : result.data
     globalCleanup.track("new_table", inserted.id)
@@ -280,7 +296,12 @@ describe("New Tool", () => {
 ```typescript
 export async function setupNewToolTest(): Promise<{ id: string; cleanup: () => Promise<void> }> {
   // Setup-Logik
-  return { id: "test-id", cleanup: async () => { /* cleanup */ } }
+  return {
+    id: "test-id",
+    cleanup: async () => {
+      /* cleanup */
+    },
+  }
 }
 ```
 
@@ -335,4 +356,3 @@ Für CI/CD-Pipelines:
 - [Tool-Executor Dokumentation](../tool-executor.md)
 - [Tool-Registry Dokumentation](../tool-registry.md)
 - [Supabase RLS Testing Guide](../rls-testing-guide.md)
-

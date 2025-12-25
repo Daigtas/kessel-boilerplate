@@ -138,13 +138,25 @@ describe("Migration 018: AI Datasources", () => {
       const { data, error } = await supabase
         .from("ai_models")
         .select("id, provider, is_default")
-        .eq("id", "google/gemini-2.5-flash")
+        .eq("id", "google/gemini-3-flash-preview")
 
       expect(error).toBeNull()
       expect(data).toBeDefined()
       expect(data?.length).toBe(1)
       expect(data?.[0].provider).toBe("openrouter")
       expect(data?.[0].is_default).toBe(true)
+    })
+
+    it("sollte Claude Opus 4.5 als Tool-Calling Modell haben", async () => {
+      const { data, error } = await supabase
+        .from("ai_models")
+        .select("id, supports_tools")
+        .eq("id", "anthropic/claude-opus-4.5")
+
+      expect(error).toBeNull()
+      expect(data).toBeDefined()
+      expect(data?.length).toBe(1)
+      expect(data?.[0].supports_tools).toBe(true)
     })
   })
 

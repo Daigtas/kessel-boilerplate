@@ -112,16 +112,25 @@ async function testAvailableModels(): Promise<Model[]> {
 
     const models = data.data || []
 
-    // Prüfe ob Gemini 2.5 Flash verfügbar ist
-    const geminiFlash = models.find((m) => m.id === "google/gemini-2.5-flash")
+    // Prüfe ob Gemini 3 Flash verfügbar ist
+    const geminiFlash = models.find((m) => m.id === "google/gemini-3-flash-preview")
 
     if (geminiFlash) {
-      console.log(`✅ Gemini 2.5 Flash gefunden: ${geminiFlash.name}`)
+      console.log(`✅ Gemini 3 Flash gefunden: ${geminiFlash.name}`)
       if (geminiFlash.architecture?.modality === "multimodal") {
         console.log("   ✅ Unterstützt Vision (multimodal)")
       }
     } else {
-      console.warn("⚠️  Gemini 2.5 Flash nicht gefunden")
+      console.warn("⚠️  Gemini 3 Flash nicht gefunden - versuche Fallback")
+    }
+
+    // Prüfe ob Claude Opus 4.5 verfügbar ist
+    const claudeOpus = models.find((m) => m.id === "anthropic/claude-opus-4.5")
+
+    if (claudeOpus) {
+      console.log(`✅ Claude Opus 4.5 gefunden: ${claudeOpus.name}`)
+    } else {
+      console.warn("⚠️  Claude Opus 4.5 nicht gefunden")
     }
 
     // Zeige Top 5 Modelle
@@ -160,7 +169,7 @@ async function testVisionCapability(): Promise<boolean> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "user",
@@ -224,7 +233,7 @@ async function testChatCompletion(): Promise<boolean> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           {
             role: "user",

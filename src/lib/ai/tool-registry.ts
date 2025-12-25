@@ -12,6 +12,7 @@ import { createClient } from "@/utils/supabase/server"
 import { tool, type ToolSet } from "ai"
 import { z } from "zod"
 import { executeTool, type ToolExecutionContext } from "./tool-executor"
+import { generateSpecialTools, SPECIAL_TOOL_NAMES } from "./special-tools"
 
 // Types
 export type AccessLevel = "none" | "read" | "read_write" | "full"
@@ -284,12 +285,17 @@ async function generateToolsForDataSource(
 /**
  * Generiert alle verfügbaren Tools basierend auf Berechtigungen
  *
+ * Enthält:
+ * 1. Generische CRUD-Tools aus ai_datasources (query_*, insert_*, update_*, delete_*)
+ * 2. Spezielle Tools für Admin-APIs und komplexe Workflows (create_user, delete_user, etc.)
+ *
  * @param ctx - Execution Context (userId, sessionId, dryRun)
  */
 export async function generateAllTools(ctx: ToolExecutionContext): Promise<ToolSet> {
   const dataSources = await loadDataSources()
   const allTools: ToolSet = {}
 
+  // 1. Generische CRUD-Tools aus ai_datasources
   for (const ds of dataSources) {
     try {
       const tools = await generateToolsForDataSource(ds, ctx)
@@ -298,6 +304,15 @@ export async function generateAllTools(ctx: ToolExecutionContext): Promise<ToolS
       console.error(`[ToolRegistry] Fehler beim Generieren von Tools für ${ds.table_name}:`, error)
       // Weiter mit nächster DataSource
     }
+  }
+
+  // 2. Spezielle Tools (Admin-APIs, Multi-Step-Workflows, etc.)
+  try {
+    const specialTools = generateSpecialTools(ctx)
+    Object.assign(allTools, specialTools)
+    console.log(`[ToolRegistry] Special Tools geladen: ${SPECIAL_TOOL_NAMES.join(", ")}`)
+  } catch (error) {
+    console.error("[ToolRegistry] Fehler beim Laden der Special Tools:", error)
   }
 
   return allTools
@@ -310,6 +325,11 @@ export async function validateToolCall(
   toolName: string,
   args: Record<string, unknown>
 ): Promise<{ valid: boolean; error?: string; dataSource?: DataSource }> {
+  // Special Tools haben eigene Validierung in ihren execute-Funktionen
+  if (SPECIAL_TOOL_NAMES.includes(toolName as (typeof SPECIAL_TOOL_NAMES)[number])) {
+    return { valid: true }
+  }
+
   // Tool-Name parsen: query_themes → { action: 'query', table: 'themes' }
   const match = toolName.match(/^(query|insert|update|delete)_(.+)$/)
   if (!match) {

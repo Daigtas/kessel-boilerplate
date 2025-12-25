@@ -96,12 +96,30 @@ export async function createTestUser(
 }
 
 /**
- * Löscht einen Test-User komplett (Auth + Profile)
+ * Löscht einen Test-User komplett (alle FKs + Auth)
+ *
+ * WICHTIG: Muss alle FK-Referenzen löschen/nullen bevor auth.users gelöscht wird,
+ * da nicht alle FKs ON DELETE CASCADE haben.
  */
 export async function deleteTestUser(userId: string): Promise<void> {
   const serviceClient = getServiceClient()
 
-  // User löschen (löscht automatisch Profile durch CASCADE)
+  // 1. ai_tool_calls löschen (kein ON DELETE CASCADE)
+  await serviceClient.from("ai_tool_calls").delete().eq("user_id", userId)
+
+  // 2. ai_datasources.created_by auf NULL setzen (kein ON DELETE CASCADE)
+  await serviceClient.from("ai_datasources").update({ created_by: null }).eq("created_by", userId)
+
+  // 3. Profile löschen (ON DELETE CASCADE sollte greifen, aber sicherheitshalber)
+  await serviceClient.from("profiles").delete().eq("id", userId)
+
+  // 4. Bugs reporter_id auf NULL setzen (ON DELETE SET NULL)
+  await serviceClient.from("bugs").update({ reporter_id: null }).eq("reporter_id", userId)
+
+  // 5. Features proposer_id auf NULL setzen (ON DELETE SET NULL)
+  await serviceClient.from("features").update({ proposer_id: null }).eq("proposer_id", userId)
+
+  // 6. Auth-User löschen
   const { error } = await serviceClient.auth.admin.deleteUser(userId)
 
   if (error) {
@@ -147,13 +165,21 @@ export async function getTestContext(
 /**
  * Cleanup-Helper: Löscht Test-Daten aus einer Tabelle
  *
- * @param tableName Tabellenname
+ * @param tableName Tabellenname (oder "auth.users" für Auth-User)
  * @param ids Array von IDs zum Löschen
  */
 export async function cleanupTestData(tableName: string, ids: string[]): Promise<void> {
   if (ids.length === 0) return
 
   const serviceClient = getServiceClient()
+
+  // Spezialfall: auth.users müssen über Admin-API gelöscht werden
+  if (tableName === "auth.users") {
+    for (const id of ids) {
+      await deleteTestUser(id)
+    }
+    return
+  }
 
   const { error } = await serviceClient.from(tableName).delete().in("id", ids)
 

@@ -13,7 +13,9 @@ vi.mock("ai", () => ({
 // Mock OpenRouter Provider
 vi.mock("@/lib/ai/openrouter-provider", () => ({
   openrouter: vi.fn(() => "openrouter-model"),
-  DEFAULT_MODEL: "google/gemini-2.5-flash",
+  DEFAULT_MODEL: "anthropic/claude-opus-4.5",
+  DEFAULT_CHAT_MODEL: "google/gemini-3-flash-preview",
+  DEFAULT_TOOL_MODEL: "anthropic/claude-opus-4.5",
 }))
 
 // Mock Tool Registry
@@ -178,15 +180,21 @@ describe("Chat API Route", () => {
     it("should use OpenRouter provider", async () => {
       const { openrouter } = await import("@/lib/ai/openrouter-provider")
 
-      openrouter("google/gemini-2.5-flash")
+      openrouter("google/gemini-3-flash-preview")
 
-      expect(openrouter).toHaveBeenCalledWith("google/gemini-2.5-flash")
+      expect(openrouter).toHaveBeenCalledWith("google/gemini-3-flash-preview")
     })
 
-    it("should use DEFAULT_MODEL when no model specified", async () => {
-      const { DEFAULT_MODEL } = await import("@/lib/ai/openrouter-provider")
+    it("should use DEFAULT_CHAT_MODEL for vision", async () => {
+      const { DEFAULT_CHAT_MODEL } = await import("@/lib/ai/openrouter-provider")
 
-      expect(DEFAULT_MODEL).toBe("google/gemini-2.5-flash")
+      expect(DEFAULT_CHAT_MODEL).toBe("google/gemini-3-flash-preview")
+    })
+
+    it("should use DEFAULT_TOOL_MODEL for tool-calling", async () => {
+      const { DEFAULT_TOOL_MODEL } = await import("@/lib/ai/openrouter-provider")
+
+      expect(DEFAULT_TOOL_MODEL).toBe("anthropic/claude-opus-4.5")
     })
   })
 
@@ -259,9 +267,9 @@ describe("Chat API Route", () => {
   describe("Response Headers", () => {
     it("should include X-Model-Used header", () => {
       const headers = new Headers()
-      headers.set("X-Model-Used", "google/gemini-2.5-flash")
+      headers.set("X-Model-Used", "google/gemini-3-flash-preview")
 
-      expect(headers.get("X-Model-Used")).toBe("google/gemini-2.5-flash")
+      expect(headers.get("X-Model-Used")).toBe("google/gemini-3-flash-preview")
     })
 
     it("should include streaming headers", () => {

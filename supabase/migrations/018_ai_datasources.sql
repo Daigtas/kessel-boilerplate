@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS public.ai_models (
 );
 
 COMMENT ON TABLE ai_models IS 'Verfügbare AI-Modelle und deren Konfiguration';
-COMMENT ON COLUMN ai_models.id IS 'Model-ID (z.B. google/gemini-2.5-flash)';
+COMMENT ON COLUMN ai_models.id IS 'Model-ID (z.B. google/gemini-3-flash-preview, anthropic/claude-opus-4.5)';
 
 -- Index für schnelle Lookups
 CREATE INDEX IF NOT EXISTS idx_ai_models_provider ON ai_models(provider);
@@ -106,9 +106,9 @@ CREATE INDEX IF NOT EXISTS idx_ai_models_default ON ai_models(is_default) WHERE 
 
 -- Default-Modelle einfügen
 INSERT INTO ai_models (id, provider, display_name, supports_vision, supports_tools, is_default) VALUES
-  ('google/gemini-2.5-flash', 'openrouter', 'Gemini 2.5 Flash', true, true, true),
-  ('anthropic/claude-3.5-sonnet', 'openrouter', 'Claude 3.5 Sonnet', true, true, false),
-  ('openai/gpt-4o', 'openrouter', 'GPT-4o', true, true, false)
+  ('google/gemini-3-flash-preview', 'openrouter', 'Gemini 3 Flash', true, false, true),
+  ('anthropic/claude-opus-4.5', 'openrouter', 'Claude Opus 4.5', true, true, false),
+  ('openai/gpt-4.1', 'openrouter', 'GPT-4.1', true, true, false)
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. Helper-Funktion: Spalten einer Tabelle abrufen

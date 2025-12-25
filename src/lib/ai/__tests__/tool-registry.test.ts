@@ -235,8 +235,13 @@ describe("Tool Registry", () => {
       // Act
       const tools = await generateAllTools(ctx)
 
-      // Assert
-      expect(Object.keys(tools)).toHaveLength(0)
+      // Assert: Keine CRUD-Tools, aber Special Tools sind immer dabei
+      // Special Tools (create_user, delete_user) werden immer geladen
+      expect(Object.keys(tools)).toContain("create_user")
+      expect(Object.keys(tools)).toContain("delete_user")
+      // Keine CRUD-Tools (query_*, insert_*, etc.)
+      expect(Object.keys(tools).filter((k) => k.startsWith("query_"))).toHaveLength(0)
+      expect(Object.keys(tools).filter((k) => k.startsWith("insert_"))).toHaveLength(0)
     })
   })
 

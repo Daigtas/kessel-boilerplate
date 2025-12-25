@@ -31,7 +31,7 @@ User fragt im Chat
 │           /api/chat (Server)                │
 ├─────────────────────────────────────────────┤
 │ 5. Wiki Content (aus src/content/wiki.md)   │
-│ 6. LLM Call (Gemini 2.5 Flash + Vision)     │
+│ 6. LLM Call via OpenRouter (Gemini 3 Flash + Vision) │
 └─────────────────────────────────────────────┘
         │
         ▼
@@ -90,20 +90,24 @@ Das Tracking speichert User-Aktionen **lokal** im Browser:
 - **Keine Kosten**: Kein Supabase-Traffic
 - **Ring-Buffer**: Automatisch auf 20 Einträge begrenzt
 
-## LLM-Provider
+## LLM-Provider (via OpenRouter)
 
-| Provider      | Rolle    | Model              |
-| ------------- | -------- | ------------------ |
-| Google Gemini | Primary  | `gemini-2.5-flash` |
-| OpenAI        | Fallback | `gpt-4o`           |
+| Model           | ID                              | Rolle                         |
+| --------------- | ------------------------------- | ----------------------------- |
+| Gemini 3 Flash  | `google/gemini-3-flash-preview` | Chat + Vision (Screenshots)   |
+| Claude Opus 4.5 | `anthropic/claude-opus-4.5`     | Tool-Calling / DB-Operationen |
+| GPT-4.1         | `openai/gpt-4.1`                | Fallback für Tool-Calling     |
 
-**Hinweis**: Gemini 2.5 Flash wurde gewählt wegen besserer Vision-Fähigkeiten für Screenshot-Analyse.
+**Model-Routing:**
 
-API-Keys müssen in `.env.local` gesetzt sein:
+- Der Chat analysiert automatisch, ob Tools benötigt werden
+- Bei normalen Fragen: Gemini 3 Flash (günstig, schnell, hervorragend für Vision)
+- Bei DB-Operationen: Claude Opus 4.5 (zuverlässiges Tool-Calling)
+
+API-Key muss in `.env.local` gesetzt sein:
 
 ```
-GOOGLE_GENERATIVE_AI_API_KEY=...
-OPENAI_API_KEY=...
+OPENROUTER_API_KEY=...
 ```
 
 ## Chat-UI (assistant-ui)
@@ -170,17 +174,17 @@ Der Wiki-Content liegt in `src/content/wiki.md` und wird:
 ## Dependencies
 
 ```bash
-pnpm add modern-screenshot ai @ai-sdk/openai @ai-sdk/google @ai-sdk/react @assistant-ui/react
+pnpm add modern-screenshot ai @ai-sdk/react @assistant-ui/react @assistant-ui/react-ai-sdk @openrouter/ai-sdk-provider
 ```
 
-| Package               | Zweck                                 |
-| --------------------- | ------------------------------------- |
-| `modern-screenshot`   | Screenshot-Capture (OKLCH-kompatibel) |
-| `ai`                  | Vercel AI SDK Core                    |
-| `@ai-sdk/google`      | Gemini Provider                       |
-| `@ai-sdk/openai`      | OpenAI Fallback                       |
-| `@ai-sdk/react`       | React Integration                     |
-| `@assistant-ui/react` | Chat-UI-Komponenten                   |
+| Package                       | Zweck                                 |
+| ----------------------------- | ------------------------------------- |
+| `modern-screenshot`           | Screenshot-Capture (OKLCH-kompatibel) |
+| `ai`                          | Vercel AI SDK Core                    |
+| `@ai-sdk/react`               | React Integration                     |
+| `@assistant-ui/react`         | Chat-UI-Komponenten                   |
+| `@assistant-ui/react-ai-sdk`  | AI SDK Integration für assistant-ui   |
+| `@openrouter/ai-sdk-provider` | OpenRouter Provider für Multi-Model   |
 
 ## Debugging
 

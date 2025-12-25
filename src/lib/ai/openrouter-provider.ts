@@ -28,62 +28,99 @@ export const openrouter = createOpenRouter({
 /**
  * Verfügbare Modelle auf OpenRouter
  *
- * Diese Liste kann dynamisch aus der OpenRouter API geladen werden,
- * aber für Performance werden die wichtigsten hier hardcodiert.
+ * Strategie:
+ * - Gemini 3 Flash: Günstig, schnell, gut für Vision/Screenshots
+ * - Claude Opus 4.5: Zuverlässig für Tool-Calling/Agent-Workflows
+ * - GPT-4.1: Fallback für Tool-Calling
  */
 export const OPENROUTER_MODELS = {
-  // Google Models
+  // === PRIMARY: Chat + Vision (günstig, schnell) ===
+  "google/gemini-3-flash-preview": {
+    id: "google/gemini-3-flash-preview",
+    name: "Gemini 3 Flash",
+    supportsVision: true,
+    supportsTools: false, // Nicht zuverlässig genug via OpenRouter
+    costTier: "low" as const,
+    useCase: "chat-vision",
+  },
+
+  // === PRIMARY: Tool-Calling (zuverlässig) ===
+  "anthropic/claude-opus-4.5": {
+    id: "anthropic/claude-opus-4.5",
+    name: "Claude Opus 4.5",
+    supportsVision: true,
+    supportsTools: true,
+    costTier: "high" as const,
+    useCase: "tools-agent",
+  },
+
+  // === FALLBACK: Tool-Calling Alternative ===
+  "openai/gpt-4.1": {
+    id: "openai/gpt-4.1",
+    name: "GPT-4.1",
+    supportsVision: true,
+    supportsTools: true,
+    costTier: "medium" as const,
+    useCase: "tools-agent",
+  },
+
+  // === LEGACY: Alte Modelle für Kompatibilität ===
+  "google/gemini-2.0-flash-001": {
+    id: "google/gemini-2.0-flash-001",
+    name: "Gemini 2.0 Flash (Legacy)",
+    supportsVision: true,
+    supportsTools: false,
+    costTier: "low" as const,
+    useCase: "chat-vision",
+  },
   "google/gemini-2.5-flash": {
     id: "google/gemini-2.5-flash",
-    name: "Gemini 2.5 Flash",
+    name: "Gemini 2.5 Flash (Legacy)",
     supportsVision: true,
-    supportsTools: true,
-    isDefault: true,
+    supportsTools: false,
+    costTier: "low" as const,
+    useCase: "chat-vision",
   },
-  "google/gemini-2.0-flash-exp": {
-    id: "google/gemini-2.0-flash-exp",
-    name: "Gemini 2.0 Flash Experimental",
-    supportsVision: true,
-    supportsTools: true,
-  },
-
-  // Anthropic Models
   "anthropic/claude-3.5-sonnet": {
     id: "anthropic/claude-3.5-sonnet",
-    name: "Claude 3.5 Sonnet",
+    name: "Claude 3.5 Sonnet (Legacy)",
     supportsVision: true,
     supportsTools: true,
+    costTier: "medium" as const,
+    useCase: "tools-agent",
   },
-  "anthropic/claude-3-opus": {
-    id: "anthropic/claude-3-opus",
-    name: "Claude 3 Opus",
-    supportsVision: true,
-    supportsTools: true,
-  },
-
-  // OpenAI Models
   "openai/gpt-4o": {
     id: "openai/gpt-4o",
-    name: "GPT-4o",
+    name: "GPT-4o (Legacy)",
     supportsVision: true,
     supportsTools: true,
-  },
-  "openai/gpt-4-turbo": {
-    id: "openai/gpt-4-turbo",
-    name: "GPT-4 Turbo",
-    supportsVision: true,
-    supportsTools: true,
+    costTier: "medium" as const,
+    useCase: "tools-agent",
   },
 } as const
 
 /**
- * Standard-Model für Chat
- *
- * Claude 3.5 Sonnet wird empfohlen für Tool-Calling, da es
- * zuverlässiger Tools aufruft als Gemini über OpenRouter.
- * Gemini über OpenRouter hat bekannte Probleme mit Tool-Calling.
+ * Standard-Modell für Chat/Vision (ohne Tools)
+ * Gemini 3 Flash: günstig, schnell, hervorragend für Screenshots
  */
-export const DEFAULT_MODEL = "anthropic/claude-3.5-sonnet"
+export const DEFAULT_CHAT_MODEL = "google/gemini-3-flash-preview"
+
+/**
+ * Standard-Modell für Tool-Calling
+ * Claude Opus 4.5: zuverlässige Tool-Aufrufe, Agent-Workflows
+ */
+export const DEFAULT_TOOL_MODEL = "anthropic/claude-opus-4.5"
+
+/**
+ * Fallback für Tool-Calling (falls Claude nicht verfügbar)
+ */
+export const FALLBACK_TOOL_MODEL = "openai/gpt-4.1"
+
+/**
+ * Legacy Export für Abwärtskompatibilität
+ * @deprecated Verwende DEFAULT_CHAT_MODEL oder DEFAULT_TOOL_MODEL
+ */
+export const DEFAULT_MODEL = DEFAULT_TOOL_MODEL
 
 /**
  * Prüft ob ein Modell Vision unterstützt

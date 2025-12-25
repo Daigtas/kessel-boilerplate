@@ -1,18 +1,20 @@
 /**
- * API Route: AI Chat mit OpenRouter + Tool-Calling
+ * API Route: AI Chat mit OpenRouter + Intelligentem Model-Router
  *
- * Streaming Chat-Endpoint mit multimodalem Kontext:
- * - Screenshot (Base64)
- * - HTML-Dump
- * - Wiki-Content
- * - User-Interactions (vom Client als LocalStorage-Daten)
- * - Tool-Calling für Datenbank-Operationen
+ * Streaming Chat-Endpoint mit:
+ * - Intelligentes Model-Routing:
+ *   - Gemini 3 Flash: Für normale Chats + Vision/Screenshots (günstig, schnell)
+ *   - Claude Opus 4.5: Für Tool-Calling/DB-Operationen (zuverlässig)
+ * - Multimodaler Kontext (Screenshot, HTML-Dump, Route, Interactions)
+ * - Wiki-Content als Wissensbasis
+ * - Dynamisches Tool-Loading basierend auf ai_datasources
  *
- * Provider: OpenRouter (Gemini 2.5 Flash, Claude, GPT-4o, etc.)
+ * Provider: OpenRouter
  */
 
-import { streamText, type CoreMessage, type ImagePart, type TextPart } from "ai"
-import { openrouter, DEFAULT_MODEL } from "@/lib/ai/openrouter-provider"
+import { streamText, stepCountIs, type CoreMessage, type ImagePart, type TextPart } from "ai"
+import { openrouter } from "@/lib/ai/openrouter-provider"
+import { detectToolNeed, type RouterDecision } from "@/lib/ai/model-router"
 import { generateAllTools } from "@/lib/ai/tool-registry"
 import type { ToolExecutionContext } from "@/lib/ai/tool-executor"
 import { loadWikiContent } from "@/lib/ai-chat/wiki-content"
@@ -56,6 +58,7 @@ function buildSystemPrompt(context: {
   hasScreenshot: boolean
   hasHtmlDump: boolean
   availableTools: string[]
+  modelName: string
 }): string {
   const toolList =
     context.availableTools.length > 0
@@ -93,16 +96,19 @@ ${toolList}
 2. WICHTIG: Wenn Daten benötigt werden, RUFE das passende Tool SOFORT auf - nicht ankündigen!
 3. Bei Tool-Aufrufen: Führe sie DIREKT aus, dann erkläre das Ergebnis
 4. Bei Unsicherheit frage nach mehr Details
-5. Formatiere längere Antworten mit Markdown`
+5. Formatiere längere Antworten mit Markdown
+6. Füge am ENDE jeder Antwort eine neue Zeile hinzu mit: \`<sub>— ${context.modelName}</sub>\``
 }
 
 /**
  * Nachricht vom Client
+ * AI SDK v5 verwendet "parts", ältere Versionen "content"
  */
 interface ClientMessage {
   id: string
   role: "user" | "assistant" | "system"
-  content: Array<{ type: string; text?: string }>
+  content?: string | Array<{ type: string; text?: string }>
+  parts?: Array<{ type: string; text?: string }>
 }
 
 /**
@@ -121,17 +127,34 @@ interface ChatRequestBody {
 /**
  * Konvertiert Client-Nachrichten zu CoreMessage Format.
  * Unterstützt multimodale Inhalte (Text + Bilder).
+ * AI SDK v5 verwendet "parts", ältere Versionen "content".
  */
 function convertMessages(messages: ClientMessage[], screenshot?: string | null): CoreMessage[] {
   const converted: CoreMessage[] = messages
     .filter((m) => m && m.role)
     .map((m) => {
-      const content = Array.isArray(m.content) ? m.content : []
-      const textContent =
-        content
-          .filter((c) => c.type === "text" && c.text)
-          .map((c) => c.text)
-          .join("\n") || ""
+      // Support sowohl String-Content als auch Array-Content
+      // AI SDK v5 verwendet "parts", ältere Versionen "content"
+      let textContent = ""
+
+      // Prüfe zuerst "parts" (AI SDK v5 Format)
+      if (Array.isArray(m.parts)) {
+        textContent =
+          m.parts
+            .filter((p) => p.type === "text" && p.text)
+            .map((p) => p.text)
+            .join("\n") || ""
+      } else if (typeof m.content === "string") {
+        // AI SDK / assistant-ui sendet Content oft als String
+        textContent = m.content
+      } else if (Array.isArray(m.content)) {
+        // Multimodales Format: Array von Parts
+        textContent =
+          m.content
+            .filter((c) => c.type === "text" && c.text)
+            .map((c) => c.text)
+            .join("\n") || ""
+      }
 
       return {
         role: m.role as "user" | "assistant" | "system",
@@ -208,20 +231,57 @@ export async function POST(req: Request) {
       return Response.json({ error: "No messages provided" }, { status: 400 })
     }
 
-    // 4. Kontext aufbauen
-    const wikiContent = await loadWikiContent()
+    // 4. Messages konvertieren (für Router-Analyse)
+    const modelMessages = convertMessages(messages, screenshot)
 
-    // Execution Context für Tools
-    const toolContext: ToolExecutionContext = {
-      userId: user.id,
-      sessionId: crypto.randomUUID(),
-      dryRun: dryRun ?? false,
+    // DEBUG: Log incoming messages - vollständig
+    console.log("[Chat API] RAW messages:", JSON.stringify(messages, null, 2).substring(0, 2000))
+    console.log(
+      "[Chat API] Converted messages:",
+      modelMessages.map((m) => ({
+        role: m.role,
+        content:
+          typeof m.content === "string"
+            ? m.content.substring(0, 100)
+            : Array.isArray(m.content)
+              ? m.content.map((c) => c.type).join(", ")
+              : "(unknown)",
+      }))
+    )
+
+    // 5. INTELLIGENTER MODEL-ROUTER
+    // Entscheidet ob Tools benötigt werden und wählt passendes Modell
+    const routerDecision: RouterDecision = detectToolNeed(modelMessages)
+
+    console.log("[Chat API] Router decision:", {
+      needsTools: routerDecision.needsTools,
+      reason: routerDecision.reason,
+      model: routerDecision.model,
+      maxSteps: routerDecision.maxSteps,
+    })
+
+    // 6. Tools NUR laden wenn Router entscheidet dass sie gebraucht werden
+    // Das spart DB-Calls bei einfachen Chat-Anfragen
+    let tools: Awaited<ReturnType<typeof generateAllTools>> | undefined
+    let availableToolNames: string[] = []
+
+    if (routerDecision.needsTools) {
+      const toolContext: ToolExecutionContext = {
+        userId: user.id,
+        sessionId: crypto.randomUUID(),
+        dryRun: dryRun ?? false,
+      }
+      tools = await generateAllTools(toolContext)
+      availableToolNames = Object.keys(tools)
+      console.log("[Chat API] Tools loaded:", availableToolNames.join(", ") || "none")
     }
 
-    const tools = await generateAllTools(toolContext)
-    const availableToolNames = Object.keys(tools)
+    // 7. Modell aus Router-Decision verwenden (oder explizit überschrieben)
+    const selectedModel = model ?? routerDecision.model
+    const maxSteps = routerDecision.maxSteps
 
-    // 5. System-Prompt
+    // 8. Kontext und System-Prompt aufbauen
+    const wikiContent = await loadWikiContent()
     const systemPrompt = buildSystemPrompt({
       wikiContent: wikiContent || "Wiki-Content nicht verfügbar.",
       interactions: formatInteractions(interactions ?? []),
@@ -229,59 +289,40 @@ export async function POST(req: Request) {
       hasScreenshot: !!screenshot,
       hasHtmlDump: !!htmlDump,
       availableTools: availableToolNames,
+      modelName: selectedModel,
     })
 
-    // 6. Messages konvertieren
-    const modelMessages = convertMessages(messages, screenshot)
+    console.log("[Chat API] Starting streamText:", {
+      model: selectedModel,
+      toolCount: availableToolNames.length,
+      maxSteps,
+      hasScreenshot: !!screenshot,
+    })
 
-    // 7. OpenRouter aufrufen mit Tool-Calling
-    const selectedModel = model ?? DEFAULT_MODEL
-    const toolCount = Object.keys(tools).length
-
-    console.log("[Chat API] Starting streamText with model:", selectedModel)
-    console.log(
-      "[Chat API] Tools available:",
-      toolCount > 0 ? Object.keys(tools).join(", ") : "none"
-    )
-
-    const result = await streamText({
+    // 9. OpenRouter aufrufen (vorher Schritt 9, jetzt nach Modell-Auswahl)
+    // Hinweis: streamText in AI SDK v5 gibt ein StreamTextResult zurück
+    const result = streamText({
       model: openrouter(selectedModel),
       system: systemPrompt,
       messages: modelMessages,
-      tools: toolCount > 0 ? tools : undefined,
-      maxSteps: 5, // Max. 5 Tool-Call Iterationen
-      onStepFinish: (step) => {
-        // Logging für jeden Schritt (inkl. Tool-Calls)
-        const textPreview = step.text
-          ? step.text.substring(0, 100) + (step.text.length > 100 ? "..." : "")
-          : "(no text)"
-
-        console.log("[Chat API] Step finished:", {
-          stepType: step.stepType,
-          text: textPreview,
-          toolCalls: step.toolCalls?.map((tc) => ({
-            toolName: tc.toolName,
-            args: tc.args ? String(JSON.stringify(tc.args)).substring(0, 100) : "(no args)",
-          })),
-          toolResults: step.toolResults?.map((tr) => ({
-            toolName: tr.toolName,
-            result: tr.result ? String(JSON.stringify(tr.result)).substring(0, 100) : "(no result)",
-          })),
-        })
-      },
+      tools: tools && Object.keys(tools).length > 0 ? tools : undefined,
+      // stopWhen ersetzt maxSteps in AI SDK v5
+      stopWhen: stepCountIs(maxSteps),
     })
 
-    console.log("[Chat API] StreamText started, returning response")
+    console.log("[Chat API] StreamText started")
 
-    // Für Streaming mit Tool-Calling: Data Stream Response verwenden
-    // Das streamt Text UND Tool-Calls/Results im Data Stream Protocol Format
-    return result.toDataStreamResponse({
+    // 10. UI Message Stream Response zurückgeben (vorher Schritt 10)
+    // Streamt Text UND Tool-Calls/Results im UI Message Protocol Format
+    return result.toUIMessageStreamResponse({
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
         "X-Accel-Buffering": "no",
+        // Custom Headers für Debugging/Monitoring
         "X-Model-Used": selectedModel,
+        "X-Router-Reason": routerDecision.reason,
+        "X-Tools-Enabled": String(routerDecision.needsTools),
       },
     })
   } catch (error) {

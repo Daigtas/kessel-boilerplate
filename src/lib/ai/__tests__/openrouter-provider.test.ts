@@ -1,5 +1,9 @@
 /**
  * Tests für OpenRouter Provider
+ *
+ * Testet Model-Routing:
+ * - DEFAULT_CHAT_MODEL: Gemini 3 Flash (Vision, kein Tool-Calling)
+ * - DEFAULT_TOOL_MODEL: Claude Opus 4.5 (zuverlässiges Tool-Calling)
  */
 
 import { describe, it, expect, beforeAll } from "vitest"
@@ -8,6 +12,8 @@ import { resolve } from "path"
 import {
   openrouter,
   DEFAULT_MODEL,
+  DEFAULT_CHAT_MODEL,
+  DEFAULT_TOOL_MODEL,
   modelSupportsVision,
   modelSupportsTools,
 } from "../openrouter-provider"
@@ -29,35 +35,53 @@ describe("OpenRouter Provider", () => {
       expect(openrouter).toBeDefined()
     })
 
-    it("sollte Standard-Model definieren", () => {
-      expect(DEFAULT_MODEL).toBe("google/gemini-2.5-flash")
+    it("sollte Chat-Model (Gemini 3 Flash) definieren", () => {
+      expect(DEFAULT_CHAT_MODEL).toBe("google/gemini-3-flash-preview")
+    })
+
+    it("sollte Tool-Model (Claude Opus 4.5) definieren", () => {
+      expect(DEFAULT_TOOL_MODEL).toBe("anthropic/claude-opus-4.5")
+    })
+
+    it("sollte DEFAULT_MODEL auf Tool-Model zeigen (Backward-Kompatibilität)", () => {
+      expect(DEFAULT_MODEL).toBe(DEFAULT_TOOL_MODEL)
     })
   })
 
   describe("Model-Unterstützung", () => {
-    it("sollte Vision-Support für Gemini erkennen", () => {
-      expect(modelSupportsVision("google/gemini-2.5-flash")).toBe(true)
+    it("sollte Vision-Support für Gemini 3 Flash erkennen", () => {
+      expect(modelSupportsVision("google/gemini-3-flash-preview")).toBe(true)
     })
 
-    it("sollte Vision-Support für Claude erkennen", () => {
+    it("sollte Vision-Support für Claude Opus 4.5 erkennen", () => {
+      expect(modelSupportsVision("anthropic/claude-opus-4.5")).toBe(true)
+    })
+
+    it("sollte Vision-Support für Legacy-Modelle erkennen", () => {
       expect(modelSupportsVision("anthropic/claude-3.5-sonnet")).toBe(true)
-    })
-
-    it("sollte Vision-Support für GPT-4o erkennen", () => {
       expect(modelSupportsVision("openai/gpt-4o")).toBe(true)
     })
 
-    it("sollte Tool-Support für alle Modelle erkennen", () => {
-      expect(modelSupportsTools("google/gemini-2.5-flash")).toBe(true)
+    it("sollte Tool-Support korrekt erkennen", () => {
+      // Gemini 3 Flash: KEIN Tool-Support (via OpenRouter unzuverlässig)
+      expect(modelSupportsTools("google/gemini-3-flash-preview")).toBe(false)
+
+      // Claude Opus 4.5: Tool-Support
+      expect(modelSupportsTools("anthropic/claude-opus-4.5")).toBe(true)
+
+      // GPT-4.1: Tool-Support
+      expect(modelSupportsTools("openai/gpt-4.1")).toBe(true)
+
+      // Legacy-Modelle: Tool-Support
       expect(modelSupportsTools("anthropic/claude-3.5-sonnet")).toBe(true)
       expect(modelSupportsTools("openai/gpt-4o")).toBe(true)
     })
   })
 
   describe("Chat-Completion Integration", () => {
-    it("sollte einfache Chat-Completion durchführen können", async () => {
+    it("sollte einfache Chat-Completion mit Chat-Model durchführen können", async () => {
       const result = await generateText({
-        model: openrouter(DEFAULT_MODEL),
+        model: openrouter(DEFAULT_CHAT_MODEL),
         prompt: "Antworte nur mit 'OK' wenn du diese Nachricht erhalten hast.",
         maxTokens: 10,
       })
@@ -66,14 +90,14 @@ describe("OpenRouter Provider", () => {
       expect(result.text.length).toBeGreaterThan(0)
     }, 30000) // 30s Timeout für API-Call
 
-    it("sollte Vision-Capability mit Bild unterstützen", async () => {
+    it("sollte Vision-Capability mit Bild unterstützen (Chat-Model)", async () => {
       // Erstelle ein minimales Test-Bild (1x1 Pixel PNG, Base64)
       const testImageBase64 =
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
       const imageBuffer = Buffer.from(testImageBase64, "base64")
 
       const result = await generateText({
-        model: openrouter(DEFAULT_MODEL),
+        model: openrouter(DEFAULT_CHAT_MODEL),
         messages: [
           {
             role: "user",
