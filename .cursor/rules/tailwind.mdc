@@ -128,6 +128,17 @@ text-lg
 text-xl
 ```
 
+### Dynamische Klassen in JS/TS
+```tsx
+// ❌ VERBOTEN - Arbitrary Values in Template-Literals
+const width = `w-[${pixels}px]`
+const color = `bg-[${hexColor}]`
+
+// ✅ ERLAUBT - CSS-Variablen oder vordefinierte Klassen
+const width = "w-full" // oder CSS-Variable
+style={{ width: `${pixels}px` }} // Nur wenn unvermeidbar
+```
+
 ---
 
 ## Dark Mode
@@ -144,6 +155,9 @@ text-xl
 
 // ❌ VERMEIDEN: Explizite dark: Klassen
 <div className="bg-white dark:bg-black">
+
+// ❌ VERBOTEN: Inline style-Overrides für Farben
+<div style={{ backgroundColor: "#000" }}>
 ```
 
 ---

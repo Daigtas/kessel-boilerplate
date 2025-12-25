@@ -1,6 +1,6 @@
 ---
-description: MCP Server Governance - ein Supabase-MCP pro Workspace.
-alwaysApply: false
+description: MCP Server Governance - ein Supabase-MCP pro Workspace, Context7 für Library-Docs.
+applyIntelligently: true
 ---
 
 # MCP Governance
@@ -79,3 +79,22 @@ const infraClient = createClient(INFRA_URL, INFRA_KEY)
 
 // ❌ FALSCH: Nicht vorschlagen, weiteren MCP zu konfigurieren
 ```
+
+---
+
+## Context7 MCP für Library-Dokumentation
+
+Context7 ist für **externe Library-Dokumentation** (React, Supabase, Next.js, AI SDK, etc.).
+
+### Wann Context7 nutzen:
+- Aktuelle API-Referenzen für externe Libraries abrufen
+- Breaking Changes oder neue Features einer Library prüfen
+- "Wie funktioniert X in Library Y?" Fragen
+
+### Was Context7 NICHT kann:
+- Projekt-Code analysieren (dafür: `codebase_search`, `grep`)
+- Abhängigkeiten zwischen eigenen Dateien finden
+- Impact-Analyse im eigenen Projekt
+
+### Empfehlung
+Bei Fragen zu externen Libraries Context7 nutzen, um aktuelle Dokumentation zu erhalten - besonders bei Libraries die sich schnell ändern (React, Next.js, Supabase).

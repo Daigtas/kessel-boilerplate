@@ -20,6 +20,7 @@ import {
   Type,
   Shapes,
   Box,
+  Database,
   type LucideIcon,
 } from "lucide-react"
 
@@ -264,6 +265,13 @@ const accountSection: NavSection = {
       label: "Rollen",
       icon: Shield,
       href: "/account/roles",
+      requiredRoles: ["admin"],
+    },
+    {
+      id: "admin-ai-datasources",
+      label: "AI Datasources",
+      icon: Database,
+      href: "/admin/ai-datasources",
       requiredRoles: ["admin"],
     },
     {

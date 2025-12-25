@@ -13,17 +13,20 @@ Dieses Projekt verwendet OpenRouter als AI-Provider, um verschiedene Modelle (Ge
 ```typescript
 // src/lib/ai/openrouter-provider.ts
 import { createOpenRouter } from "@openrouter/ai-sdk-provider"
+import { APP_CONFIG } from "@/config/app"
 
 export const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
   baseURL: "https://openrouter.ai/api/v1",
   compatibility: "compatible",
   headers: {
-    "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "https://app.example.com",
-    "X-Title": process.env.NEXT_PUBLIC_APP_NAME || "My App",
+    "HTTP-Referer": APP_CONFIG.siteUrl,  // Aus zentraler Config
+    "X-Title": APP_CONFIG.appName,       // Nicht inline duplizieren
   },
 })
 ```
+
+**Hinweis:** HTTP-Referer und X-Title als Konstanten aus zentraler Config importieren, nicht inline duplizieren.
 
 ---
 
@@ -145,6 +148,11 @@ export async function POST(req: Request) {
 // Gemini Flash ist sehr günstig und schnell
 export const DEFAULT_MODEL = "google/gemini-2.5-flash"
 ```
+
+### 2. Modell passend zur Aufgabe wählen
+- **Einfache Queries:** Gemini Flash (günstig, schnell)
+- **Komplexes Reasoning:** Claude Sonnet (teurer, besser)
+- **Kein großes Reasoning-Modell für einmalige, kleine Queries**
 
 ### 2. Kontext begrenzen
 ```typescript

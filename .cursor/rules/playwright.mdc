@@ -52,6 +52,10 @@ e2e/
     └── auth.ts           # Auth Fixtures
 ```
 
+### Wichtige Prinzipien
+- **Tests voneinander unabhängig** - Kein State-Übertrag zwischen Tests
+- **Jeder Test startet mit sauberem Zustand** - Fixtures für Setup nutzen
+
 ---
 
 ## Basis-Test Pattern
@@ -154,6 +158,10 @@ page.getByTestId("user-avatar")
 page.locator(".btn-primary")
 page.locator("#submit-button")
 page.locator("div > span > button")
+
+// Timing-basierte Assertions
+await page.waitForTimeout(1000) // ❌ NIEMALS
+await expect(page.getByText("Loaded")).toBeVisible() // ✅ Stattdessen
 ```
 
 ---

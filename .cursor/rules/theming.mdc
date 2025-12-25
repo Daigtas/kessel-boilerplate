@@ -37,6 +37,9 @@ Dieses Projekt verwendet ein CSS-First Theme-System mit Supabase als Single Sour
 - **CSS:** Supabase Storage Bucket `themes` → `{theme-id}.css`
 - **Metadaten:** Supabase Tabelle `public.themes` → id, name, description, dynamic_fonts
 
+### Sicherheit
+- **Kein direktes Schreiben in themes-Bucket vom Client** - Nur über geprüfte Server-Routen/Actions
+
 ### Theme-Provider Aufgabe
 Der Provider macht NUR EINS:
 ```typescript
@@ -117,6 +120,10 @@ body { font-family: "Inter", sans-serif; }
 /* ✅ Nur CSS-Variablen */
 body { font-family: var(--font-sans); }
 ```
+
+### Font-Registrierung
+- **Keine zusätzlichen Webfonts ohne Eintrag im zentralen Font-System** (`src/lib/fonts/registry.ts`)
+- Neue Fonts müssen registriert werden, bevor sie in Themes verwendet werden können
 
 ---
 

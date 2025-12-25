@@ -211,3 +211,5 @@ pnpm test --ui
 4. **Aussagekräftige Namen** - "sollte X tun wenn Y"
 5. **Keine Implementation Details testen** - Verhalten, nicht Struktur
 6. **Isolation** - Jeder Test unabhängig von anderen
+7. **Kein Snapshot-Testing für komplexe Komponenten** - Lieber gezielte Assertions
+8. **Keine echten Netzwerkanfragen** - Immer mocken/stubben (Supabase, APIs, etc.)

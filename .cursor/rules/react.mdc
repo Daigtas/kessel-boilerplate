@@ -18,6 +18,10 @@ Dieses Projekt verwendet React 19 mit dem Next.js App Router. Die wichtigste Unt
 - Sensible Daten (API-Keys, Tokens)
 - Große Dependencies, die nicht zum Client gesendet werden sollen
 
+### VERBOTEN in Server Components:
+- Kein direkter Zugriff auf `window`, `document` oder Browser-APIs
+- Async nur für Data-Fetching, nicht für komplexe Business-Logik (die gehört in Services)
+
 ### Beispiel Server Component:
 ```tsx
 // app/(shell)/users/page.tsx
@@ -43,6 +47,10 @@ Verwende `"use client"` NUR wenn die Komponente:
 - Event Handler benötigt (`onClick`, `onChange`, etc.)
 - Browser-APIs verwendet (`window`, `document`, `localStorage`)
 - Interaktive UI-Elemente hat
+
+### Best Practices für Client Components:
+- State lokal halten; globale Stores nur bei klarer Notwendigkeit (z.B. Auth, UI-State)
+- Daten als Props empfangen, nicht selbst fetchen
 
 ### Beispiel Client Component:
 ```tsx

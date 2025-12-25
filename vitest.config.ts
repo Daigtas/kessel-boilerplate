@@ -1,5 +1,9 @@
 import { defineConfig } from "vitest/config"
 import { resolve } from "path"
+import { config as dotenvConfig } from "dotenv"
+
+// Lade .env.local für Tests
+dotenvConfig({ path: resolve(__dirname, ".env.local") })
 
 /**
  * Vitest-Konfiguration für das Theme-System.

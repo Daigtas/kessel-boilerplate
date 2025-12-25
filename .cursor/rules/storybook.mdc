@@ -71,6 +71,10 @@ export const Destructive: Story = {
   },
 }
 
+// ✅ Stories mit realistischen Props, keine leeren Placeholder
+// ❌ args: { children: "Text" } - zu generisch
+// ✅ args: { children: "Änderungen speichern" } - realistisch
+
 export const WithIcon: Story = {
   render: (args) => (
     <Button {...args}>
@@ -159,6 +163,10 @@ export const InCard: Story = {
   ],
 }
 ```
+
+### Wichtig
+- **Globale Decorators zentral definieren** - In `.storybook/preview.ts`, nicht pro Story
+- Story-spezifische Decorators nur bei tatsächlichem Bedarf
 
 ---
 

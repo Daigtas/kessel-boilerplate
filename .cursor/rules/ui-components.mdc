@@ -65,6 +65,8 @@ Dieses Projekt verwendet ShadCN UI mit strikten Design Tokens. Native HTML-Eleme
 
 **VERBOTEN:** `bg-blue-500`, `text-red-600`, `text-[#333]`, `bg-[#ff0000]`
 
+**Neue Tokens:** Nur über das zentrale Theme-System einführen (`globals.css`), nicht lokal im Component-CSS.
+
 ### Hover-States
 ```tsx
 // Interaktive Listen
@@ -98,6 +100,8 @@ Dieses Projekt verwendet ShadCN UI mit strikten Design Tokens. Native HTML-Eleme
 | Sektions-Abstände | `py-12`, `py-16` |
 
 **VERBOTEN:** `p-3`, `m-5`, `gap-7`, `p-[17px]`, `m-[23px]`
+
+**Grid-/Flex-Gaps:** Ebenfalls nur aus der definierten Skala wählen (`gap-4`, `gap-6`, etc.)
 
 ### Typografie
 

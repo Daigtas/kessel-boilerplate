@@ -58,6 +58,10 @@ export default function NeueSeitePage() {
 }
 ```
 
+### Wichtig
+- **Keine Layout-Logik in page.tsx duplizieren** - Nur Content im `PageContent` bereitstellen
+- Das Layout (`PageContent`, Header, Footer) wird vom Shell-System verwaltet
+
 ---
 
 ## PageContent Props
@@ -142,6 +146,7 @@ function MyComponent() {
 - Keine hardcodierten z-Index-Werte
 - Keine verschachtelten `<main>` Tags (PageContent stellt `<main>` bereit)
 - Keine `maxWidth` Props außer bei bewusstem Abweichen
+- Keine Inline-Styles für Layout (Margins/Max-Width) auf Root-Level-Komponenten
 
 ---
 

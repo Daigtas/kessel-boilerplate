@@ -45,8 +45,12 @@ export function UserForm() {
   })
 
   async function onSubmit(data: UserFormValues) {
-    // data ist typsicher und validiert
-    await saveUser(data)
+    try {
+      await saveUser(data)
+      toast.success("Gespeichert!")
+    } catch (error) {
+      toast.error("Fehler beim Speichern")
+    }
   }
 
   return (
@@ -58,6 +62,11 @@ export function UserForm() {
   )
 }
 ```
+
+### Wichtige Regeln
+- **Keine unkontrollierten Inputs** - Immer `register` oder `Controller` verwenden
+- **Submit-Handler als async mit Fehlerhandling** - Keine void Fire-and-Forget
+- **defaultValues setzen** - Verhindert uncontrolled→controlled Warnung
 
 ---
 

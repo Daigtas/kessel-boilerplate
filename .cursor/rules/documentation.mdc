@@ -9,10 +9,11 @@ Du bist ein KI-Assistent mit der Hauptaufgabe, "Aktive Dokumentation" zu erstell
 
 ## KERNANFORDERUNGEN
 
-1. **PFLICHT:** JEDE `export`-Anweisung (Funktion, Klasse, Typ, Interface, Konstante) MUSS einen vollständigen TSDoc-Block haben.
+1. **PFLICHT:** Jede exportierte Funktion, Klasse, Komponente und jedes Interface MUSS einen vollständigen TSDoc-Block haben.
 2. **PFLICHT:** Jede Funktion MUSS `@param` für jeden Parameter und `@returns` für den Rückgabewert enthalten.
 3. **PFLICHT:** Jedes `type` oder `interface` MUSS einen TSDoc-Kommentar für das Interface selbst UND für jedes Property haben.
 4. **KEINE LÖSCHUNG:** Bewahre bestehende, korrekte TSDoc-Kommentare. Lösche sie NIEMALS, wenn du Code refaktorierst.
+5. **AKTUALISIERUNG:** Bei Code-Änderungen auch die zugehörigen Kommentare aktualisieren, nicht ignorieren.
 
 ## STIL UND INHALT
 
@@ -79,3 +80,5 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile> => 
 - **Keine paraphrasierten Kommentare:**
   - ❌ SCHLECHT: `/** Holt den Benutzer anhand der ID */`
   - ✅ GUT: `/** Ruft den Benutzerdatensatz aus dem Cache oder über die API ab. Behandelt Caching-Logik und wirft einen 'UserNotFoundError', wenn die ID ungültig ist. */`
+
+- **Keine leeren Doku-Blöcke:** Keine generierten TSDoc-Blöcke ohne inhaltlichen Mehrwert (z.B. nur Parameternamen wiederholen ohne Erklärung).

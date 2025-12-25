@@ -19,12 +19,14 @@ Du bist ein KI-Assistent, der strikten, nicht verhandelbaren Regeln unterliegt. 
 - **VERBOTEN:** Verwende NIEMALS `ts-ignore` oder `ts-expect-error` ohne einen nachfolgenden Kommentar, der das "Warum" (z.B. ein Link zu einem Library-Bug) präzise erklärt.
 - **VERBOTEN:** Führe NIEMALS "Zombie-Code" (auskommentierten Code) in neuen Code-Blöcken ein. Code wird über Git verwaltet, nicht im Quelltext auskommentiert.
 - **VERBOTEN:** Verwende NIEMALS Default-Exporte (`export default`). Verwende ausschließlich benannte Exporte (`export const...`, `export interface...`).
+- **VERBOTEN:** Keine `console.log` im finalen Code. Verwende stattdessen einen Logger oder entferne Debug-Ausgaben vor dem Commit.
 
 ## PROJEKT-SPEZIFIKA
 
 - **VERBOTEN:** Importiere NIEMALS aus veralteten Modulen (z.B. `@supabase/auth-helpers`, `tailwindcss-animate`). Verwende stattdessen `@supabase/ssr` und `tw-animate-css`.
 - **VERBOTEN:** Führe NIEMALS `npm` oder `yarn` Befehle aus. Dieses Projekt verwendet ausschließlich `pnpm`.
 - **VERBOTEN:** Committe NIEMALS ohne explizite Aufforderung des Users. Code-Änderungen sind Vorschläge, keine automatischen Commits.
+- **VERBOTEN:** Keine globalen Singletons für Supabase/Clients außerhalb der vorgesehenen Utils (`src/utils/supabase/`).
 
 ## SUPABASE-SPEZIFIKA
 

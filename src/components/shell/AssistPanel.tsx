@@ -64,7 +64,12 @@ export function AssistPanel({
         className="flex flex-1 flex-col overflow-hidden"
       >
         {/* Tab Contents */}
-        <TabsContent value="chat" className="mt-0 flex-1 overflow-hidden">
+        {/* forceMount für Chat: Verhindert Unmounting bei Tab-Wechsel, erhält Chat-State */}
+        <TabsContent 
+          value="chat" 
+          className="mt-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+          forceMount
+        >
           {chatContent ?? <AIChatPanel />}
         </TabsContent>
 

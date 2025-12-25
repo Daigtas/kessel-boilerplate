@@ -251,3 +251,4 @@ const message: CoreMessage = {
 4. **Kontext mitgeben** - Screenshot + Route für bessere Antworten
 5. **maxSteps begrenzen** - Verhindert endlose Tool-Loops
 6. **Fehler graceful behandeln** - AI-Fehler sollten nicht die App crashen
+7. **Keine Secrets in Logs** - Niemals API-Keys, Tokens oder sensible Daten in Logs oder Chat-Kontext schreiben

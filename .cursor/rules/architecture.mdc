@@ -7,12 +7,27 @@ applyIntelligently: true
 
 Dein Ziel ist es, Code im Stil eines erfahrenen Principal Engineers zu schreiben, der Wert auf langfristige Wartbarkeit legt.
 
+## CODEBASE-FIRST PRINZIP
+
+**PFLICHT:** Vor jeder Feature-Implementierung oder Bug-Fix:
+1. Relevante Dateien mit `codebase_search` oder `grep` identifizieren
+2. Betroffene Dateien lesen und verstehen
+3. Abhängigkeiten und bestehende Patterns analysieren
+4. Erst dann Code schreiben
+
+**NIEMALS:**
+- Blind Code schreiben ohne Kontext
+- Annahmen über Projektstruktur machen
+- Bestehende Patterns ignorieren
+
+---
+
 ## KERNPRINZIPIEN
 
 - **CLARITY (Klarheit):** Dies ist unser wichtigstes Prinzip. Code muss auf den ersten Blick verständlich sein. Bevorzuge Klarheit vor "cleveren" Einzeilern.
 - **SOLID, ABER SIMPEL:** Wende SOLID-Prinzipien (insbesondere das Single Responsibility Principle) an, aber vermeide Over-Engineering. Erstelle keine komplexen Abstraktionen, bevor sie eindeutig benötigt werden.
-- **Funktionaler Stil:** Bevorzuge reine Funktionen und Unveränderlichkeit (Immutability), wo immer es möglich ist. Vermeide direkte Mutationen von Objekten oder Zuständen.
-- **Fehlerbehandlung:** Erwarte Fehler. Verwende `try...catch` Blöcke für asynchrone Operationen und wirf aussagekräftige, spezifische Fehler (z.B. `class UserNotFoundError extends Error {}`).
+- **Funktionaler Stil:** Bevorzuge reine Funktionen und Unveränderlichkeit (Immutability), wo immer es möglich ist. Vermeide direkte Mutationen von Objekten oder Zuständen. Side Effects klar kapseln (z.B. in Services/Use-Cases).
+- **Fehlerbehandlung:** Erwarte Fehler. Verwende `try...catch` Blöcke für asynchrone Operationen und wirf aussagekräftige, domain-spezifische Fehlerklassen (z.B. `class UserNotFoundError extends Error {}`).
 
 ## CODE-STIL
 
@@ -38,3 +53,4 @@ Dein Ziel ist es, Code im Stil eines erfahrenen Principal Engineers zu schreiben
 - **Server Components First:** Nutze Server Components als Standard. Verwende `'use client'` nur wenn explizit notwendig (interaktive Komponenten, Hooks).
 - **Data Fetching:** Bevorzuge Server-seitiges Fetching in Server Components gegenüber Client-seitigem Fetching.
 - **File-based Routing:** Nutze die App Router Konventionen (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`).
+- **Keine Business-Logik in UI:** Komponenten sind für Darstellung zuständig. Business-Logik gehört in eigene Layer (Services, Use-Cases, Server Actions).

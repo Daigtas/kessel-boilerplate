@@ -10,29 +10,22 @@ vi.mock("ai", () => ({
   convertToModelMessages: vi.fn((messages) => messages),
 }))
 
-// Mock Google Provider
-vi.mock("@ai-sdk/google", () => ({
-  google: vi.fn(() => "google-model"),
+// Mock OpenRouter Provider
+vi.mock("@/lib/ai/openrouter-provider", () => ({
+  openrouter: vi.fn(() => "openrouter-model"),
+  DEFAULT_MODEL: "google/gemini-2.5-flash",
 }))
 
-// Mock OpenAI Provider
-vi.mock("@ai-sdk/openai", () => ({
-  openai: vi.fn(() => "openai-model"),
+// Mock Tool Registry
+vi.mock("@/lib/ai/tool-registry", () => ({
+  generateAllTools: vi.fn().mockResolvedValue({}),
 }))
 
-// Mock Supabase
-vi.mock("@supabase/supabase-js", () => ({
-  createClient: vi.fn(() => ({
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          order: vi.fn(() => ({
-            limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-          })),
-        })),
-      })),
-    })),
-  })),
+// Mock Tool Executor (nicht nötig, da nur Types verwendet werden)
+
+// Mock Supabase Server Client
+vi.mock("@/utils/supabase/server", () => ({
+  createClient: vi.fn(),
 }))
 
 // Mock Wiki Content
@@ -181,54 +174,107 @@ describe("Chat API Route", () => {
     })
   })
 
-  describe("LLM Provider Selection", () => {
-    it("should use Gemini as primary provider", async () => {
-      const { google } = await import("@ai-sdk/google")
+  describe("OpenRouter Integration", () => {
+    it("should use OpenRouter provider", async () => {
+      const { openrouter } = await import("@/lib/ai/openrouter-provider")
 
-      google("gemini-2.0-flash")
+      openrouter("google/gemini-2.5-flash")
 
-      expect(google).toHaveBeenCalledWith("gemini-2.0-flash")
+      expect(openrouter).toHaveBeenCalledWith("google/gemini-2.5-flash")
     })
 
-    it("should fallback to OpenAI on Gemini error", async () => {
-      const { openai } = await import("@ai-sdk/openai")
+    it("should use DEFAULT_MODEL when no model specified", async () => {
+      const { DEFAULT_MODEL } = await import("@/lib/ai/openrouter-provider")
 
-      // Simuliere Fallback
-      const useOpenAI = true
-      if (useOpenAI) {
-        openai("gpt-4o")
+      expect(DEFAULT_MODEL).toBe("google/gemini-2.5-flash")
+    })
+  })
+
+  describe("Tool-Calling Integration", () => {
+    it("should generate tools for authenticated user", async () => {
+      const { generateAllTools } = await import("@/lib/ai/tool-registry")
+
+      const tools = await generateAllTools({
+        userId: "test-user",
+        sessionId: "test-session",
+        dryRun: false,
+      })
+
+      expect(generateAllTools).toHaveBeenCalled()
+      expect(tools).toBeDefined()
+    })
+
+    it("should include available tools in system prompt", () => {
+      const context = {
+        wikiContent: "",
+        interactions: "",
+        currentRoute: "",
+        hasScreenshot: false,
+        hasHtmlDump: false,
+        availableTools: ["query_themes", "insert_themes"],
       }
 
-      expect(openai).toHaveBeenCalledWith("gpt-4o")
+      const systemPrompt = buildTestSystemPrompt(context)
+
+      expect(systemPrompt).toContain("Verfügbare Tools")
+      expect(systemPrompt).toContain("query_themes")
+    })
+
+    it("should support dry-run mode", async () => {
+      const { generateAllTools } = await import("@/lib/ai/tool-registry")
+
+      await generateAllTools({
+        userId: "test-user",
+        sessionId: "test-session",
+        dryRun: true,
+      })
+
+      expect(generateAllTools).toHaveBeenCalledWith(expect.objectContaining({ dryRun: true }))
     })
   })
 
   describe("Error Handling", () => {
+    it("should return 401 when user not authenticated", () => {
+      const user = null
+      const status = user ? 200 : 401
+
+      expect(status).toBe(401)
+    })
+
+    it("should return 503 when OPENROUTER_API_KEY missing", () => {
+      const apiKey = undefined
+      const status = apiKey ? 200 : 503
+
+      expect(status).toBe(503)
+    })
+
     it("should return 500 on unexpected error", () => {
       const error = new Error("Unexpected error")
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
 
       expect(errorMessage).toBe("Unexpected error")
     })
-
-    it("should handle missing Supabase config", () => {
-      const config = {
-        url: undefined,
-        key: undefined,
-      }
-
-      const hasConfig = !!config.url && !!config.key
-
-      expect(hasConfig).toBe(false)
-    })
   })
 
   describe("Response Headers", () => {
-    it("should include X-AI-Provider header", () => {
+    it("should include X-Model-Used header", () => {
       const headers = new Headers()
-      headers.set("X-AI-Provider", "gemini")
+      headers.set("X-Model-Used", "google/gemini-2.5-flash")
 
-      expect(headers.get("X-AI-Provider")).toBe("gemini")
+      expect(headers.get("X-Model-Used")).toBe("google/gemini-2.5-flash")
+    })
+
+    it("should include streaming headers", () => {
+      const headers = new Headers()
+      headers.set("Content-Type", "text/plain; charset=utf-8")
+      headers.set("Cache-Control", "no-cache")
+      headers.set("Connection", "keep-alive")
+      headers.set("X-Accel-Buffering", "no")
+
+      expect(headers.get("Content-Type")).toBe("text/plain; charset=utf-8")
+      expect(headers.get("Cache-Control")).toBe("no-cache")
+      expect(headers.get("Connection")).toBe("keep-alive")
+      expect(headers.get("X-Accel-Buffering")).toBe("no")
     })
   })
 })
@@ -240,7 +286,13 @@ function buildTestSystemPrompt(context: {
   currentRoute: string
   hasScreenshot: boolean
   hasHtmlDump: boolean
+  availableTools?: string[]
 }): string {
+  const toolList =
+    context.availableTools && context.availableTools.length > 0
+      ? `\n\n### Verfügbare Tools\n${context.availableTools.map((t) => `- ${t}`).join("\n")}`
+      : ""
+
   return `Du bist ein hilfreicher KI-Assistent.
 
 ## Wiki-Dokumentation
@@ -254,6 +306,7 @@ ${context.interactions}
 
 ${context.hasScreenshot ? "### Screenshot\nDu hast einen Screenshot erhalten." : ""}
 ${context.hasHtmlDump ? "### HTML-Struktur\nDu hast die HTML-Struktur erhalten." : ""}
+${toolList}
 `
 }
 

@@ -45,6 +45,14 @@ export default async function proxy(request: NextRequest) {
   
   return response
 }
+```
+
+### Proxy-Regeln
+- **ERLAUBT:** Auth-relevante Aufrufe (`supabase.auth.getUser()`, Cookie-Refresh)
+- **VERBOTEN:** Direkte Datenbank-Queries oder externe API-Aufrufe
+- Der Proxy leitet nur weiter und verwaltet Auth-Kontext (Cookies, Headers)
+
+```typescript
 
 export const config = {
   matcher: [
@@ -99,8 +107,9 @@ app/
 
 ### VERBOTEN:
 - `/pages` Verzeichnis
-- `pages/api` für API Routes
+- `pages/api` für API Routes (nur `app/**/route.ts`)
 - `getServerSideProps`, `getStaticProps`
+- Neue API-Routen außerhalb von `app/**/route.ts`
 
 ---
 

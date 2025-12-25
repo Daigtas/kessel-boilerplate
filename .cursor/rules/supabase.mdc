@@ -10,6 +10,11 @@ Dieses Projekt verwendet Supabase als Backend mit Auth, PostgreSQL, RLS und Stor
 
 ## Client-Erstellung
 
+### Grundregel
+- **Server Components / API Routes:** `createClient()` aus `@/utils/supabase/server`
+- **Client Components:** Nur für Auth-State (`onAuthStateChange`). Keine direkten DB-Queries!
+- **Für Data-Fetching im Client:** Server Actions oder API-Routes nutzen
+
 ### Server-Kontext (Server Components, API Routes)
 ```typescript
 // src/utils/supabase/server.ts
@@ -248,6 +253,11 @@ supabase db reset
 # Remote (Production)
 supabase db push
 ```
+
+### WICHTIG
+- Schema-Änderungen **ausschließlich** über Supabase CLI ausführen
+- **NIEMALS** den SQL-Editor im Dashboard für Schema-Änderungen verwenden
+- Migrations sind die Single Source of Truth
 
 ### Migration-Struktur
 ```sql

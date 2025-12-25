@@ -84,6 +84,21 @@ export async function fetchUser(id: string): Promise<User | null> {
 }
 ```
 
+### Typisierte Fehlerbehandlung
+```typescript
+// ❌ Ungetypter catch
+try { ... } catch (error) {
+  console.log(error.message) // error ist any!
+}
+
+// ✅ Fehler als unknown behandeln
+try { ... } catch (error: unknown) {
+  if (error instanceof Error) {
+    console.log(error.message)
+  }
+}
+```
+
 ### Parameter-Objekte für 3+ Parameter
 ```typescript
 // ❌ Zu viele Parameter
@@ -180,6 +195,10 @@ const name = user?.displayName ?? "Anonymous"
 
 // ❌ Veraltet
 const name = user && user.displayName ? user.displayName : "Anonymous"
+
+// ⚠️ WICHTIG: || vs ?? bei falsy values
+const count = data.count || 10  // ❌ Falsch bei count = 0
+const count = data.count ?? 10  // ✅ Nur bei null/undefined
 ```
 
 ---

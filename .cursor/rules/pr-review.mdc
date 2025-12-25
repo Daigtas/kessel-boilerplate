@@ -15,6 +15,7 @@ Du wurdest gebeten, einen Code-Review durchzuführen. Analysiere den vorgeschlag
 5. **Fehlerbehandlung:** Werden Fehler angemessen behandelt und geworfen?
 6. **Performance:** Gibt es offensichtliche Performance-Probleme (z.B. unnötige Re-Renders, ineffiziente Loops)?
 7. **Security:** Wurden Secrets oder sensible Daten exponiert?
+8. **Cursor-Rules:** Werden alle relevanten Rules eingehalten (Design-System, Tailwind, Supabase, Shell, MCP)?
 
 ## OUTPUT-FORMAT
 
@@ -31,3 +32,6 @@ Strukturiere deine Antwort wie folgt:
 
 ### 📝 Optional
 - Nice-to-have Verbesserungen
+
+### 📋 Priorisierte To-do-Liste
+- Kurze, priorisierte Liste der wichtigsten Änderungen in Stichpunkten
