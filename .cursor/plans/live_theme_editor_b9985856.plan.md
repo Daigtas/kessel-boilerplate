@@ -180,8 +180,3 @@ AI: "Dein neues Theme 'Sunset' wurde erstellt und ist jetzt aktiv."
 3. Ändert Farben via Color-Picker
 4. Klickt "Speichern als..."
 5. Gibt "Mein Ocean" ein
-6. Neues Theme wird erstellt und aktiviert
-
-## Vorteile dieses Ansatzes
-
-- **Non-destructive**: Keine Daten gehen verloren

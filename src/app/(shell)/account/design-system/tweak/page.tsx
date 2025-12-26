@@ -48,6 +48,9 @@ export default function TweakPage(): React.ReactElement {
 
   // Lade Schriftnamen aus CSS-Variablen
   useEffect(() => {
+    // Skip on server
+    if (typeof window === "undefined") return
+
     const genericFonts = [
       "sans-serif",
       "serif",
@@ -60,7 +63,7 @@ export default function TweakPage(): React.ReactElement {
 
     const extractFontInfo = (cssVar: string): { name: string; isFallback: boolean } => {
       const root = document.documentElement
-      const computedStyle = getComputedStyle(root)
+      const computedStyle = window.getComputedStyle(root)
       const value = computedStyle.getPropertyValue(cssVar).trim()
 
       if (!value) {

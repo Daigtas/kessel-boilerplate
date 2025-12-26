@@ -61,6 +61,9 @@ export function useThemeEditor(): ThemeEditorState & ThemeEditorActions {
   const [pendingChanges, setPendingChanges] = useState<Map<string, TokenValue>>(new Map())
 
   const previewToken = useCallback((name: string, light: string, dark: string) => {
+    // Skip on server
+    if (typeof window === "undefined") return
+
     const root = document.documentElement
     const isDark = root.classList.contains("dark")
 
@@ -76,6 +79,9 @@ export function useThemeEditor(): ThemeEditorState & ThemeEditorActions {
   }, [])
 
   const resetPreview = useCallback(() => {
+    // Skip on server
+    if (typeof window === "undefined") return
+
     const root = document.documentElement
 
     // Entferne alle Inline-Styles die wir gesetzt haben
@@ -104,8 +110,11 @@ export function useThemeEditor(): ThemeEditorState & ThemeEditorActions {
   }, [currentThemeId, baseThemeId])
 
   const getCurrentTokens = useCallback((): Record<string, TokenValue> => {
+    // Return empty on server
+    if (typeof window === "undefined") return {}
+
     const root = document.documentElement
-    const computedStyle = getComputedStyle(root)
+    const computedStyle = window.getComputedStyle(root)
     const tokens: Record<string, TokenValue> = {}
 
     // Liste aller CSS-Variablen die wir bearbeiten können
@@ -151,12 +160,17 @@ export function useThemeEditor(): ThemeEditorState & ThemeEditorActions {
 
   const saveAsNewTheme = useCallback(
     async (name: string, description?: string): Promise<string> => {
+      // This should only run on client
+      if (typeof window === "undefined") {
+        throw new Error("saveAsNewTheme kann nur auf dem Client aufgerufen werden")
+      }
+
       if (!baseThemeId) {
         throw new Error("Kein Basis-Theme ausgewählt")
       }
 
       const root = document.documentElement
-      const computedStyle = getComputedStyle(root)
+      const computedStyle = window.getComputedStyle(root)
 
       // Generiere Theme-ID aus Name
       const themeId = slugify(name)
