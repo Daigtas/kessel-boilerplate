@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef } from "react"
+import { useState, useCallback } from "react"
 import { HexColorPicker, HexColorInput } from "react-colorful"
 import Color from "color"
 import { Button } from "@/components/ui/button"
@@ -101,6 +101,9 @@ export function ColorPicker({
   // Initialisiere mit lazy initializer (wird nur beim Mount aufgerufen)
   const [hexValue, setHexValue] = useState(() => toHex(value))
 
+  // Verhindere Hydration-Mismatch: Prüfe ob wir client-seitig sind
+  const isClient = typeof window !== "undefined"
+
   // Sync nur wenn sich der externe Wert WIRKLICH ändert (beim Öffnen)
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -137,6 +140,23 @@ export function ColorPicker({
 
   const rgbValue = toRgb(hexValue)
   const oklchValue = toOklch(hexValue)
+
+  // Verhindere Hydration-Mismatch: Trigger ohne Popover beim SSR
+  if (!isClient) {
+    return (
+      <>
+        {children || (
+          <Button
+            variant="outline"
+            size="icon"
+            className={cn("size-8 rounded-md", className)}
+            style={{ backgroundColor: hexValue }}
+            disabled={disabled}
+          />
+        )}
+      </>
+    )
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
