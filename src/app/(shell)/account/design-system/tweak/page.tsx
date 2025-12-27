@@ -255,6 +255,7 @@ export default function TweakPage(): React.ReactElement {
   const [letterSpacing, setLetterSpacing] = useState(0)
 
   // Shadow sliders
+  const [shadowColor, setShadowColor] = useState("#000000")
   const [shadowOpacity, setShadowOpacity] = useState(0.1)
   const [shadowBlur, setShadowBlur] = useState(1.0)
   const [shadowSpread, setShadowSpread] = useState(0)
@@ -891,17 +892,44 @@ export default function TweakPage(): React.ReactElement {
               />
             </div>
           </div>
-          <p className="text-muted-foreground mb-4 text-xs">
-            Hinweis: Shadow-Slider beeinflussen aktuell nur die Vorschau. Für persistente Änderungen
-            müssen Shadows im Theme-CSS definiert werden.
-          </p>
+          {/* Schattenfarbe */}
+          <div className="mb-6 flex items-start gap-6">
+            <div className="group relative h-16 w-64 shrink-0">
+              <ColorPicker value={shadowColor} onChange={setShadowColor}>
+                <div
+                  className="hover:ring-ring absolute inset-0 cursor-pointer rounded-lg border shadow-sm transition-all hover:ring-2"
+                  style={{
+                    backgroundColor: shadowColor,
+                    borderRadius: "var(--radius)",
+                  }}
+                />
+              </ColorPicker>
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col py-1">
+              <span className="text-foreground text-sm font-medium">Schattenfarbe</span>
+              <span className="text-muted-foreground truncate text-xs">
+                Farbe für alle Schatten
+              </span>
+              <div className="text-muted-foreground flex gap-4 font-mono text-xs">
+                <span>{shadowColor}</span>
+                <span className="opacity-50">|</span>
+                <span>{hexToRgb(shadowColor)}</span>
+              </div>
+            </div>
+          </div>
           {/* Elemente mit dynamischen Schatten */}
           <div className="space-y-4">
             {shadowItems.map((item, index) => {
+              // Konvertiere Hex zu RGB für rgba()
+              const rgbMatch = shadowColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i)
+              const r = rgbMatch ? parseInt(rgbMatch[1], 16) : 0
+              const g = rgbMatch ? parseInt(rgbMatch[2], 16) : 0
+              const b = rgbMatch ? parseInt(rgbMatch[3], 16) : 0
+
               // Dynamische Shadow-Berechnung basierend auf Slider-Werten
               const baseBlur = [1, 2, 4, 6, 10, 15, 25][index] || 6
               const baseOffsetY = [1, 1, 2, 4, 8, 12, 25][index] || 4
-              const dynamicShadow = `0 ${Math.round(baseOffsetY * shadowOffsetY)}px ${Math.round(baseBlur * shadowBlur)}px ${shadowSpread}px rgba(0,0,0,${shadowOpacity})`
+              const dynamicShadow = `0 ${Math.round(baseOffsetY * shadowOffsetY)}px ${Math.round(baseBlur * shadowBlur)}px ${shadowSpread}px rgba(${r},${g},${b},${shadowOpacity})`
 
               return (
                 <DisplaySwatch
