@@ -708,7 +708,7 @@ export default function TweakPage(): React.ReactElement {
           <h2 className="text-foreground mb-4 text-xl font-semibold">Radius & Spacing</h2>
           {/* Slider OBEN */}
           <div className="mb-6 space-y-4">
-            <div className="w-96 space-y-2">
+            <div className="w-64 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">--radius</Label>
                 <span className="text-muted-foreground font-mono text-xs">
@@ -723,7 +723,7 @@ export default function TweakPage(): React.ReactElement {
                 step={0.125}
               />
             </div>
-            <div className="w-96 space-y-2">
+            <div className="w-64 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">--spacing</Label>
                 <span className="text-muted-foreground font-mono text-xs">
@@ -757,7 +757,7 @@ export default function TweakPage(): React.ReactElement {
         <section>
           <h2 className="text-foreground mb-4 text-xl font-semibold">Typografie</h2>
           {/* Slider OBEN */}
-          <div className="mb-6 w-96 space-y-2">
+          <div className="mb-6 w-64 space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Letter Spacing</Label>
               <span className="text-muted-foreground font-mono text-xs">
@@ -828,9 +828,9 @@ export default function TweakPage(): React.ReactElement {
         {/* Shadows */}
         <section>
           <h2 className="text-foreground mb-4 text-xl font-semibold">Schatten</h2>
-          {/* Slider OBEN */}
-          <div className="mb-6 grid w-full grid-cols-2 gap-4 lg:w-2/3">
-            <div className="space-y-2">
+          {/* Slider OBEN - alle untereinander */}
+          <div className="mb-6 space-y-4">
+            <div className="w-64 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Opacity</Label>
                 <span className="text-muted-foreground font-mono text-xs">
@@ -845,7 +845,7 @@ export default function TweakPage(): React.ReactElement {
                 step={0.01}
               />
             </div>
-            <div className="space-y-2">
+            <div className="w-64 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Blur</Label>
                 <span className="text-muted-foreground font-mono text-xs">
@@ -860,7 +860,7 @@ export default function TweakPage(): React.ReactElement {
                 step={0.1}
               />
             </div>
-            <div className="space-y-2">
+            <div className="w-64 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Spread</Label>
                 <span className="text-muted-foreground font-mono text-xs">
@@ -875,7 +875,7 @@ export default function TweakPage(): React.ReactElement {
                 step={1}
               />
             </div>
-            <div className="space-y-2">
+            <div className="w-64 space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Offset Y</Label>
                 <span className="text-muted-foreground font-mono text-xs">
@@ -932,7 +932,7 @@ export default function TweakPage(): React.ReactElement {
             </Button>
           </div>
           {/* Slider */}
-          <div className="w-96 space-y-6">
+          <div className="w-64 space-y-6">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm">Hue-Shift</Label>
