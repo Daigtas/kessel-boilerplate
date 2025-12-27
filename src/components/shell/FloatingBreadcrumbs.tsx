@@ -166,8 +166,8 @@ export function FloatingBreadcrumbs({
       className={cn(
         // Position: Schwebt oben links
         "absolute top-4 left-4 z-20",
-        // Glassmorphism: Semi-transparenter Hintergrund mit Blur, Pillenform
-        "bg-background/80 text-foreground flex h-8 items-center gap-1 rounded-full px-3 backdrop-blur-sm",
+        // Glassmorphism: Semi-transparenter Hintergrund mit Blur, Pillenform (invertiert)
+        "bg-foreground/80 text-background flex h-8 items-center gap-1 rounded-full px-3 backdrop-blur-sm",
         className
       )}
     >
@@ -178,7 +178,7 @@ export function FloatingBreadcrumbs({
             <Fragment key={item.href + index}>
               {index > 0 && (
                 <li aria-hidden="true">
-                  <ChevronRight className="size-3 opacity-60" />
+                  <ChevronRight className="size-3 opacity-70" />
                 </li>
               )}
               <li>
@@ -187,7 +187,7 @@ export function FloatingBreadcrumbs({
                     {index === 0 && showHomeIcon ? <Home className="size-3" /> : item.label}
                   </span>
                 ) : item.label === "..." ? (
-                  <span className="opacity-60">...</span>
+                  <span className="opacity-70">...</span>
                 ) : (
                   <Link
                     href={item.href}
