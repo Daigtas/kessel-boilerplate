@@ -259,6 +259,7 @@ export default function TweakPage(): React.ReactElement {
   const [shadowOpacity, setShadowOpacity] = useState(0.1)
   const [shadowBlur, setShadowBlur] = useState(1.0)
   const [shadowSpread, setShadowSpread] = useState(0)
+  const [shadowOffsetX, setShadowOffsetX] = useState(0)
   const [shadowOffsetY, setShadowOffsetY] = useState(1.0)
 
   // Global adjustments
@@ -878,6 +879,22 @@ export default function TweakPage(): React.ReactElement {
             </div>
             <div className="w-64 space-y-2">
               <div className="flex items-center justify-between">
+                <Label className="text-sm">Offset X</Label>
+                <span className="text-muted-foreground font-mono text-xs">
+                  {shadowOffsetX > 0 ? "+" : ""}
+                  {shadowOffsetX.toFixed(1)}px
+                </span>
+              </div>
+              <Slider
+                value={[shadowOffsetX]}
+                onValueChange={(v) => setShadowOffsetX(v[0])}
+                min={-10}
+                max={10}
+                step={0.5}
+              />
+            </div>
+            <div className="w-64 space-y-2">
+              <div className="flex items-center justify-between">
                 <Label className="text-sm">Offset Y</Label>
                 <span className="text-muted-foreground font-mono text-xs">
                   {shadowOffsetY.toFixed(1)}x
@@ -929,7 +946,9 @@ export default function TweakPage(): React.ReactElement {
               // Dynamische Shadow-Berechnung basierend auf Slider-Werten
               const baseBlur = [1, 2, 4, 6, 10, 15, 25][index] || 6
               const baseOffsetY = [1, 1, 2, 4, 8, 12, 25][index] || 4
-              const dynamicShadow = `0 ${Math.round(baseOffsetY * shadowOffsetY)}px ${Math.round(baseBlur * shadowBlur)}px ${shadowSpread}px rgba(${r},${g},${b},${shadowOpacity})`
+              // Offset X wird direkt in Pixeln verwendet (kann negativ sein)
+              // Offset Y wird als Multiplikator verwendet (nur positiv)
+              const dynamicShadow = `${Math.round(shadowOffsetX)}px ${Math.round(baseOffsetY * shadowOffsetY)}px ${Math.round(baseBlur * shadowBlur)}px ${shadowSpread}px rgba(${r},${g},${b},${shadowOpacity})`
 
               return (
                 <DisplaySwatch
