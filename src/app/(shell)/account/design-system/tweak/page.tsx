@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { PageContent, PageHeader } from "@/components/shell"
 import { useExplorer } from "@/components/shell"
 import { useTheme as useColorMode } from "next-themes"
+import Color from "color"
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { ColorPicker } from "@/components/ui/color-picker"
 import { RotateCcw, Palette } from "lucide-react"
 import { useTheme } from "@/lib/themes"
 import { useThemeEditor } from "@/hooks/use-theme-editor"
@@ -14,232 +16,7 @@ import { ColorPairSwatch } from "@/components/theme/ColorPairSwatch"
 import { FloatingToolbar } from "@/components/theme/FloatingToolbar"
 
 /**
- * BorderSwatch - Zeigt einen Border-Token als leeres Rechteck (256×64)
- */
-function BorderSwatch({
-  tokenName,
-  label,
-}: {
-  tokenName: string
-  label: string
-}): React.ReactElement {
-  const { previewToken, getCurrentTokens } = useThemeEditor()
-  const { theme: colorMode, resolvedTheme } = useColorMode()
-  const isDarkMode = colorMode === "dark" || (colorMode === "system" && resolvedTheme === "dark")
-
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [value, setValue] = useState("#808080")
-  const [originalValue, setOriginalValue] = useState("")
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const loadValue = () => {
-      const tokens = getCurrentTokens()
-      const token = tokens[tokenName] || { light: "", dark: "" }
-      const currentValue = isDarkMode ? token.dark : token.light
-      setValue(oklchToHex(currentValue))
-      if (!originalValue) setOriginalValue(currentValue)
-    }
-    const timeout = setTimeout(loadValue, 50)
-    return () => clearTimeout(timeout)
-  }, [tokenName, getCurrentTokens, isDarkMode, originalValue])
-
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const hex = e.target.value
-      setValue(hex)
-      if (isDarkMode) {
-        previewToken(tokenName, undefined, hex)
-      } else {
-        previewToken(tokenName, hex)
-      }
-    },
-    [tokenName, previewToken, isDarkMode]
-  )
-
-  const handleReset = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      if (originalValue) {
-        setValue(oklchToHex(originalValue))
-        if (isDarkMode) {
-          previewToken(tokenName, undefined, originalValue)
-        } else {
-          previewToken(tokenName, originalValue)
-        }
-      }
-    },
-    [tokenName, originalValue, previewToken, isDarkMode]
-  )
-
-  return (
-    <div className="flex items-center gap-4">
-      <span className="text-muted-foreground w-32 shrink-0 text-sm">{label}</span>
-      <div className="group relative h-16 w-64">
-        {/* eslint-disable-next-line local/use-design-system-components -- Native color picker required */}
-        <input
-          ref={inputRef}
-          type="color"
-          value={value}
-          onChange={handleChange}
-          className="sr-only"
-          tabIndex={-1}
-        />
-        <div
-          onClick={() => inputRef.current?.click()}
-          className="hover:ring-ring absolute inset-0 cursor-pointer rounded-lg border-2 transition-all hover:ring-2"
-          style={{
-            borderColor: `var(${tokenName})`,
-            borderRadius: "var(--radius)",
-          }}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleReset}
-          className="bg-background/80 hover:bg-background absolute top-2 right-2 z-20 size-6 rounded-full opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-          title="Auf Original zurücksetzen"
-        >
-          <RotateCcw className="text-muted-foreground size-3" />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-/**
- * ChartSwatch - Zeigt einen Chart-Token als Rechteck mit Gradient (256×64)
- */
-function ChartSwatch({
-  tokenName,
-  label,
-}: {
-  tokenName: string
-  label: string
-}): React.ReactElement {
-  const { previewToken, getCurrentTokens } = useThemeEditor()
-  const { theme: colorMode, resolvedTheme } = useColorMode()
-  const isDarkMode = colorMode === "dark" || (colorMode === "system" && resolvedTheme === "dark")
-
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [value, setValue] = useState("#808080")
-  const [originalValue, setOriginalValue] = useState("")
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const loadValue = () => {
-      const tokens = getCurrentTokens()
-      const token = tokens[tokenName] || { light: "", dark: "" }
-      const currentValue = isDarkMode ? token.dark : token.light
-      setValue(oklchToHex(currentValue))
-      if (!originalValue) setOriginalValue(currentValue)
-    }
-    const timeout = setTimeout(loadValue, 50)
-    return () => clearTimeout(timeout)
-  }, [tokenName, getCurrentTokens, isDarkMode, originalValue])
-
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const hex = e.target.value
-      setValue(hex)
-      if (isDarkMode) {
-        previewToken(tokenName, undefined, hex)
-      } else {
-        previewToken(tokenName, hex)
-      }
-    },
-    [tokenName, previewToken, isDarkMode]
-  )
-
-  const handleReset = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      if (originalValue) {
-        setValue(oklchToHex(originalValue))
-        if (isDarkMode) {
-          previewToken(tokenName, undefined, originalValue)
-        } else {
-          previewToken(tokenName, originalValue)
-        }
-      }
-    },
-    [tokenName, originalValue, previewToken, isDarkMode]
-  )
-
-  return (
-    <div className="flex items-center gap-4">
-      <span className="text-muted-foreground w-32 shrink-0 text-sm">{label}</span>
-      <div className="group relative h-16 w-64">
-        {/* eslint-disable-next-line local/use-design-system-components -- Native color picker required */}
-        <input
-          ref={inputRef}
-          type="color"
-          value={value}
-          onChange={handleChange}
-          className="sr-only"
-          tabIndex={-1}
-        />
-        <div
-          onClick={() => inputRef.current?.click()}
-          className="hover:ring-ring absolute inset-0 cursor-pointer rounded-lg border shadow-sm transition-all hover:ring-2"
-          style={{
-            background: `linear-gradient(135deg, var(${tokenName}) 0%, var(${tokenName}) 60%, transparent 60%)`,
-            backgroundColor: `var(${tokenName})`,
-            borderRadius: "var(--radius)",
-          }}
-        />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleReset}
-          className="bg-background/80 hover:bg-background absolute top-2 right-2 z-20 size-6 rounded-full opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
-          title="Auf Original zurücksetzen"
-        >
-          <RotateCcw className="text-muted-foreground size-3" />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-/**
- * RadiusSwatch - Zeigt Radius-Vorschau als Rechteck (256×64)
- */
-function RadiusSwatch({
-  radiusClass,
-  label,
-}: {
-  radiusClass: string
-  label: string
-}): React.ReactElement {
-  return (
-    <div className="flex items-center gap-4">
-      <span className="text-muted-foreground w-32 shrink-0 text-sm">{label}</span>
-      <div className={`bg-primary h-16 w-64 border shadow-sm ${radiusClass}`} />
-    </div>
-  )
-}
-
-/**
- * ShadowSwatch - Zeigt Shadow-Vorschau als Rechteck (256×64)
- */
-function ShadowSwatch({
-  shadowClass,
-  label,
-}: {
-  shadowClass: string
-  label: string
-}): React.ReactElement {
-  return (
-    <div className="flex items-center gap-4">
-      <span className="text-muted-foreground w-32 shrink-0 text-sm">{label}</span>
-      <div className={`bg-card h-16 w-64 rounded-lg border ${shadowClass}`} />
-    </div>
-  )
-}
-
-/**
- * OKLCH zu Hex Konvertierung
+ * Konvertiert OKLCH zu Hex
  */
 function oklchToHex(oklch: string): string {
   if (!oklch) return "#808080"
@@ -260,9 +37,174 @@ function oklchToHex(oklch: string): string {
 }
 
 /**
+ * Konvertiert Hex zu RGB-String
+ */
+function hexToRgb(hex: string): string {
+  try {
+    const c = Color(hex)
+    const rgb = c.rgb().array()
+    return `rgb(${Math.round(rgb[0])}, ${Math.round(rgb[1])}, ${Math.round(rgb[2])})`
+  } catch {
+    return "rgb(128, 128, 128)"
+  }
+}
+
+/**
+ * SingleColorSwatch - Einzelne Farbe (Border, Chart, etc.)
+ * Layout: Rechteck LINKS, Beschreibung RECHTS
+ * Verwendet ColorPicker für die Farbauswahl.
+ */
+function SingleColorSwatch({
+  tokenName,
+  name,
+  description,
+  variant = "filled",
+}: {
+  tokenName: string
+  name: string
+  description: string
+  variant?: "filled" | "border" | "gradient"
+}): React.ReactElement {
+  const { previewToken, getCurrentTokens } = useThemeEditor()
+  const { theme: colorMode, resolvedTheme } = useColorMode()
+  const isDarkMode = colorMode === "dark" || (colorMode === "system" && resolvedTheme === "dark")
+
+  const [hex, setHex] = useState("#808080")
+  const [oklch, setOklch] = useState("")
+  const [originalValue, setOriginalValue] = useState("")
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const loadValue = () => {
+      const tokens = getCurrentTokens()
+      const token = tokens[tokenName] || { light: "", dark: "" }
+      const currentValue = isDarkMode ? token.dark : token.light
+      setHex(oklchToHex(currentValue))
+      setOklch(currentValue)
+      if (!originalValue) setOriginalValue(currentValue)
+    }
+    const timeout = setTimeout(loadValue, 50)
+    return () => clearTimeout(timeout)
+  }, [tokenName, getCurrentTokens, isDarkMode, originalValue])
+
+  const handleChange = useCallback(
+    (newHex: string) => {
+      setHex(newHex)
+      if (isDarkMode) {
+        previewToken(tokenName, undefined, newHex)
+      } else {
+        previewToken(tokenName, newHex)
+      }
+    },
+    [tokenName, previewToken, isDarkMode]
+  )
+
+  const handleReset = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      if (originalValue) {
+        setHex(oklchToHex(originalValue))
+        if (isDarkMode) {
+          previewToken(tokenName, undefined, originalValue)
+        } else {
+          previewToken(tokenName, originalValue)
+        }
+      }
+    },
+    [tokenName, originalValue, previewToken, isDarkMode]
+  )
+
+  const getSwatchStyle = (): React.CSSProperties => {
+    switch (variant) {
+      case "border":
+        return {
+          borderColor: `var(${tokenName})`,
+          borderWidth: "2px",
+          borderRadius: "var(--radius)",
+        }
+      case "gradient":
+        return {
+          background: `linear-gradient(135deg, var(${tokenName}) 0%, var(${tokenName}) 60%, transparent 60%)`,
+          backgroundColor: `var(${tokenName})`,
+          borderRadius: "var(--radius)",
+        }
+      default:
+        return {
+          backgroundColor: `var(${tokenName})`,
+          borderRadius: "var(--radius)",
+        }
+    }
+  }
+
+  return (
+    <div className="flex items-start gap-6">
+      {/* Swatch - LINKS */}
+      <div className="group relative h-16 w-64 shrink-0">
+        <ColorPicker value={hex} onChange={handleChange}>
+          <div
+            className="hover:ring-ring absolute inset-0 cursor-pointer rounded-lg border shadow-sm transition-all hover:ring-2"
+            style={getSwatchStyle()}
+          />
+        </ColorPicker>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleReset}
+          className="bg-background/80 hover:bg-background absolute top-2 right-2 z-20 size-6 rounded-full opacity-0 shadow-sm transition-opacity group-hover:opacity-100"
+          title="Auf Original zurücksetzen"
+        >
+          <RotateCcw className="text-muted-foreground size-3" />
+        </Button>
+      </div>
+
+      {/* Beschreibung - RECHTS (3 Zeilen) */}
+      <div className="flex min-w-0 flex-1 flex-col py-1">
+        <span className="text-foreground text-sm font-medium">{name}</span>
+        <span className="text-muted-foreground truncate text-xs">{description}</span>
+        <div className="text-muted-foreground flex gap-4 font-mono text-xs">
+          <span title={oklch}>{oklch.substring(0, 25) || hex}</span>
+          <span className="opacity-50">|</span>
+          <span>{hexToRgb(hex)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * DisplaySwatch - Nur Anzeige (Radius, Shadow) ohne Farbpicker
+ * Layout: Rechteck LINKS, Beschreibung RECHTS
+ */
+function DisplaySwatch({
+  name,
+  description,
+  value,
+  className,
+  style,
+}: {
+  name: string
+  description: string
+  value: string
+  className?: string
+  style?: React.CSSProperties
+}): React.ReactElement {
+  return (
+    <div className="flex items-start gap-6">
+      {/* Swatch - LINKS */}
+      <div className={`bg-card h-16 w-64 shrink-0 border ${className || ""}`} style={style} />
+
+      {/* Beschreibung - RECHTS */}
+      <div className="flex min-w-0 flex-1 flex-col py-1">
+        <span className="text-foreground text-sm font-medium">{name}</span>
+        <span className="text-muted-foreground truncate text-xs">{description}</span>
+        <span className="text-muted-foreground font-mono text-xs">{value}</span>
+      </div>
+    </div>
+  )
+}
+
+/**
  * Tweak the UI Seite
- *
- * Vertikales Layout ohne Cards, H2-Kapitelüberschriften
  */
 export default function TweakPage(): React.ReactElement {
   const { theme: currentThemeId } = useTheme()
@@ -370,7 +312,7 @@ export default function TweakPage(): React.ReactElement {
     const c = parseFloat(match[2])
     const h = parseFloat(match[3])
 
-    const hueSpacing = 72 // 360/5
+    const hueSpacing = 72
     const chartTokens = ["--chart-2", "--chart-3", "--chart-4", "--chart-5"]
 
     chartTokens.forEach((token, index) => {
@@ -466,67 +408,151 @@ export default function TweakPage(): React.ReactElement {
     [hueShift, saturationMult, lightnessMult, applyGlobalAdjustments]
   )
 
-  // Data
+  // Token-Daten mit Beschreibungen
   const coreColorPairs = [
-    { token: "--background", foreground: "--foreground", label: "Background" },
-    { token: "--card", foreground: "--card-foreground", label: "Card" },
-    { token: "--popover", foreground: "--popover-foreground", label: "Popover" },
-    { token: "--primary", foreground: "--primary-foreground", label: "Primary" },
-    { token: "--secondary", foreground: "--secondary-foreground", label: "Secondary" },
-    { token: "--muted", foreground: "--muted-foreground", label: "Muted" },
-    { token: "--accent", foreground: "--accent-foreground", label: "Accent" },
-    { token: "--destructive", foreground: "--destructive-foreground", label: "Destructive" },
+    {
+      token: "--background",
+      foreground: "--foreground",
+      name: "Background",
+      description: "Haupt-Hintergrundfarbe der Anwendung",
+    },
+    {
+      token: "--card",
+      foreground: "--card-foreground",
+      name: "Card",
+      description: "Hintergrund für Card-Komponenten",
+    },
+    {
+      token: "--popover",
+      foreground: "--popover-foreground",
+      name: "Popover",
+      description: "Hintergrund für Popovers, Dropdowns, Tooltips",
+    },
+    {
+      token: "--primary",
+      foreground: "--primary-foreground",
+      name: "Primary",
+      description: "Primärfarbe für Buttons, Links, CTAs",
+    },
+    {
+      token: "--secondary",
+      foreground: "--secondary-foreground",
+      name: "Secondary",
+      description: "Sekundärfarbe für weniger prominente Aktionen",
+    },
+    {
+      token: "--muted",
+      foreground: "--muted-foreground",
+      name: "Muted",
+      description: "Gedämpfte Hintergründe, Badges, Labels",
+    },
+    {
+      token: "--accent",
+      foreground: "--accent-foreground",
+      name: "Accent",
+      description: "Hover-States, Highlights, ausgewählte Items",
+    },
+    {
+      token: "--destructive",
+      foreground: "--destructive-foreground",
+      name: "Destructive",
+      description: "Fehler, Löschen, destruktive Aktionen",
+    },
   ]
 
   const borderTokens = [
-    { token: "--border", label: "Border" },
-    { token: "--input", label: "Input" },
-    { token: "--ring", label: "Ring" },
+    { token: "--border", name: "Border", description: "Standard-Border-Farbe für Trennlinien" },
+    { token: "--input", name: "Input", description: "Border-Farbe für Input-Felder" },
+    { token: "--ring", name: "Ring", description: "Focus-Ring für interaktive Elemente" },
   ]
 
   const chartTokens = [
-    { token: "--chart-1", label: "Chart 1" },
-    { token: "--chart-2", label: "Chart 2" },
-    { token: "--chart-3", label: "Chart 3" },
-    { token: "--chart-4", label: "Chart 4" },
-    { token: "--chart-5", label: "Chart 5" },
+    {
+      token: "--chart-1",
+      name: "Chart 1",
+      description: "Erste Farbe in Diagrammen und Visualisierungen",
+    },
+    { token: "--chart-2", name: "Chart 2", description: "Zweite Farbe in Diagrammen" },
+    { token: "--chart-3", name: "Chart 3", description: "Dritte Farbe in Diagrammen" },
+    { token: "--chart-4", name: "Chart 4", description: "Vierte Farbe in Diagrammen" },
+    { token: "--chart-5", name: "Chart 5", description: "Fünfte Farbe in Diagrammen" },
   ]
 
   const sidebarColorPairs = [
-    { token: "--sidebar", foreground: "--sidebar-foreground", label: "Sidebar" },
+    {
+      token: "--sidebar",
+      foreground: "--sidebar-foreground",
+      name: "Sidebar",
+      description: "Hintergrund der Seitennavigation",
+    },
     {
       token: "--sidebar-primary",
       foreground: "--sidebar-primary-foreground",
-      label: "Sidebar Primary",
+      name: "Sidebar Primary",
+      description: "Aktive/ausgewählte Sidebar-Items",
     },
     {
       token: "--sidebar-accent",
       foreground: "--sidebar-accent-foreground",
-      label: "Sidebar Accent",
+      name: "Sidebar Accent",
+      description: "Hover-State der Sidebar-Items",
     },
   ]
 
   const sidebarBorderTokens = [
-    { token: "--sidebar-border", label: "Sidebar Border" },
-    { token: "--sidebar-ring", label: "Sidebar Ring" },
+    {
+      token: "--sidebar-border",
+      name: "Sidebar Border",
+      description: "Border/Trennlinien in der Sidebar",
+    },
+    {
+      token: "--sidebar-ring",
+      name: "Sidebar Ring",
+      description: "Focus-Ring für Sidebar-Elemente",
+    },
   ]
 
   const radiusItems = [
-    { radiusClass: "rounded-sm", label: "Small (sm)" },
-    { radiusClass: "rounded-md", label: "Medium (md)" },
-    { radiusClass: "rounded-lg", label: "Large (lg)" },
-    { radiusClass: "rounded-xl", label: "Extra Large (xl)" },
-    { radiusClass: "rounded-full", label: "Full" },
+    {
+      class: "rounded-sm",
+      name: "Small (sm)",
+      description: "Kleine Elemente: Checkboxen, Badges",
+      value: "calc(var(--radius) - 4px)",
+    },
+    {
+      class: "rounded-md",
+      name: "Medium (md)",
+      description: "Standard für Buttons und Inputs",
+      value: "calc(var(--radius) - 2px)",
+    },
+    {
+      class: "rounded-lg",
+      name: "Large (lg)",
+      description: "Cards und Container",
+      value: "var(--radius)",
+    },
+    {
+      class: "rounded-xl",
+      name: "Extra Large (xl)",
+      description: "Große Panels und Modals",
+      value: "calc(var(--radius) + 4px)",
+    },
+    {
+      class: "rounded-full",
+      name: "Full",
+      description: "Avatare, Pills, runde Buttons",
+      value: "9999px",
+    },
   ]
 
   const shadowItems = [
-    { shadowClass: "shadow-2xs", label: "2XS" },
-    { shadowClass: "shadow-xs", label: "XS" },
-    { shadowClass: "shadow-sm", label: "Small" },
-    { shadowClass: "shadow-md", label: "Medium" },
-    { shadowClass: "shadow-lg", label: "Large" },
-    { shadowClass: "shadow-xl", label: "XL" },
-    { shadowClass: "shadow-2xl", label: "2XL" },
+    { class: "shadow-2xs", name: "2XS", description: "Minimaler Schatten für subtile Tiefe" },
+    { class: "shadow-xs", name: "XS", description: "Sehr kleiner Schatten" },
+    { class: "shadow-sm", name: "Small", description: "Leichte Elevation für Buttons" },
+    { class: "shadow-md", name: "Medium", description: "Standard-Schatten für Cards" },
+    { class: "shadow-lg", name: "Large", description: "Stärkere Elevation für Modals" },
+    { class: "shadow-xl", name: "XL", description: "Hohe Elevation für Dialoge" },
+    { class: "shadow-2xl", name: "2XL", description: "Maximaler Schatten für Overlays" },
   ]
 
   return (
@@ -540,13 +566,14 @@ export default function TweakPage(): React.ReactElement {
         {/* Core Theme Colors */}
         <section>
           <h2 className="text-foreground mb-6 text-xl font-semibold">Core Theme Colors</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {coreColorPairs.map((pair) => (
               <ColorPairSwatch
                 key={pair.token}
                 tokenName={pair.token}
                 foregroundTokenName={pair.foreground}
-                label={pair.label}
+                name={pair.name}
+                description={pair.description}
               />
             ))}
           </div>
@@ -555,9 +582,15 @@ export default function TweakPage(): React.ReactElement {
         {/* Borders */}
         <section>
           <h2 className="text-foreground mb-6 text-xl font-semibold">Borders</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {borderTokens.map((token) => (
-              <BorderSwatch key={token.token} tokenName={token.token} label={token.label} />
+              <SingleColorSwatch
+                key={token.token}
+                tokenName={token.token}
+                name={token.name}
+                description={token.description}
+                variant="border"
+              />
             ))}
           </div>
         </section>
@@ -571,9 +604,15 @@ export default function TweakPage(): React.ReactElement {
               Harmonize (72° Spacing)
             </Button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {chartTokens.map((token) => (
-              <ChartSwatch key={token.token} tokenName={token.token} label={token.label} />
+              <SingleColorSwatch
+                key={token.token}
+                tokenName={token.token}
+                name={token.name}
+                description={token.description}
+                variant="gradient"
+              />
             ))}
           </div>
         </section>
@@ -581,19 +620,26 @@ export default function TweakPage(): React.ReactElement {
         {/* Sidebar Colors */}
         <section>
           <h2 className="text-foreground mb-6 text-xl font-semibold">Sidebar Colors</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {sidebarColorPairs.map((pair) => (
               <ColorPairSwatch
                 key={pair.token}
                 tokenName={pair.token}
                 foregroundTokenName={pair.foreground}
-                label={pair.label}
+                name={pair.name}
+                description={pair.description}
               />
             ))}
           </div>
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-4">
             {sidebarBorderTokens.map((token) => (
-              <BorderSwatch key={token.token} tokenName={token.token} label={token.label} />
+              <SingleColorSwatch
+                key={token.token}
+                tokenName={token.token}
+                name={token.name}
+                description={token.description}
+                variant="border"
+              />
             ))}
           </div>
         </section>
@@ -620,12 +666,14 @@ export default function TweakPage(): React.ReactElement {
           </div>
 
           {/* Radius Previews */}
-          <div className="space-y-2">
+          <div className="space-y-4">
             {radiusItems.map((item) => (
-              <RadiusSwatch
-                key={item.radiusClass}
-                radiusClass={item.radiusClass}
-                label={item.label}
+              <DisplaySwatch
+                key={item.class}
+                name={item.name}
+                description={item.description}
+                value={item.value}
+                className={`bg-primary ${item.class}`}
               />
             ))}
           </div>
@@ -652,7 +700,7 @@ export default function TweakPage(): React.ReactElement {
         <section>
           <h2 className="text-foreground mb-6 text-xl font-semibold">Typografie</h2>
 
-          {/* Letter Spacing Slider (für alle Fonts) */}
+          {/* Letter Spacing Slider */}
           <div className="mb-6 w-96 space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Letter Spacing</Label>
@@ -672,37 +720,51 @@ export default function TweakPage(): React.ReactElement {
 
           {/* Font Previews */}
           <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground w-32 shrink-0 text-sm">
-                Sans ({fontNames.sans})
-              </span>
+            <div className="flex items-start gap-6">
               <div
-                className="h-16 w-64 font-sans text-2xl leading-[64px] font-semibold"
+                className="h-16 w-64 shrink-0 font-sans text-2xl leading-[64px] font-semibold"
                 style={{ letterSpacing: `${letterSpacing}em` }}
               >
                 Aa Bb Cc Dd Ee
               </div>
+              <div className="flex min-w-0 flex-1 flex-col py-1">
+                <span className="text-foreground text-sm font-medium">Sans ({fontNames.sans})</span>
+                <span className="text-muted-foreground text-xs">
+                  Hauptschrift für UI-Text und Überschriften
+                </span>
+                <span className="text-muted-foreground font-mono text-xs">--font-sans</span>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground w-32 shrink-0 text-sm">
-                Mono ({fontNames.mono})
-              </span>
+            <div className="flex items-start gap-6">
               <div
-                className="h-16 w-64 font-mono text-2xl leading-[64px] font-semibold"
+                className="h-16 w-64 shrink-0 font-mono text-2xl leading-[64px] font-semibold"
                 style={{ letterSpacing: `${letterSpacing}em` }}
               >
                 Aa Bb Cc Dd Ee
               </div>
+              <div className="flex min-w-0 flex-1 flex-col py-1">
+                <span className="text-foreground text-sm font-medium">Mono ({fontNames.mono})</span>
+                <span className="text-muted-foreground text-xs">
+                  Code-Blöcke, technische Werte, Keyboard-Shortcuts
+                </span>
+                <span className="text-muted-foreground font-mono text-xs">--font-mono</span>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground w-32 shrink-0 text-sm">
-                Serif ({fontNames.serif})
-              </span>
+            <div className="flex items-start gap-6">
               <div
-                className="h-16 w-64 text-2xl leading-[64px] font-semibold"
+                className="h-16 w-64 shrink-0 text-2xl leading-[64px] font-semibold"
                 style={{ fontFamily: "var(--font-serif)", letterSpacing: `${letterSpacing}em` }}
               >
                 Aa Bb Cc Dd Ee
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col py-1">
+                <span className="text-foreground text-sm font-medium">
+                  Serif ({fontNames.serif})
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  Längere Texte, Artikel, Zitate
+                </span>
+                <span className="text-muted-foreground font-mono text-xs">--font-serif</span>
               </div>
             </div>
           </div>
@@ -711,12 +773,14 @@ export default function TweakPage(): React.ReactElement {
         {/* Shadows */}
         <section>
           <h2 className="text-foreground mb-6 text-xl font-semibold">Schatten</h2>
-          <div className="space-y-2">
+          <div className="space-y-4">
             {shadowItems.map((item) => (
-              <ShadowSwatch
-                key={item.shadowClass}
-                shadowClass={item.shadowClass}
-                label={item.label}
+              <DisplaySwatch
+                key={item.class}
+                name={item.name}
+                description={item.description}
+                value={item.class}
+                className={`rounded-lg ${item.class}`}
               />
             ))}
           </div>

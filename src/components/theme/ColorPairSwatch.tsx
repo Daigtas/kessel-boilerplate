@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { RotateCcw } from "lucide-react"
 import { useTheme as useColorMode } from "next-themes"
+import Color from "color"
 import { Button } from "@/components/ui/button"
+import { ColorPicker } from "@/components/ui/color-picker"
 import { useThemeEditor } from "@/hooks/use-theme-editor"
 
 interface ColorPairSwatchProps {
@@ -11,12 +13,14 @@ interface ColorPairSwatchProps {
   tokenName: string
   /** Token-Name für Foreground (z.B. "--primary-foreground") */
   foregroundTokenName: string
-  /** Label für die Anzeige */
-  label: string
+  /** Name für die Anzeige */
+  name: string
+  /** Beschreibung wo/wie verwendet */
+  description: string
 }
 
 /**
- * Konvertiert OKLCH zu Hex für den nativen Color-Picker
+ * Konvertiert OKLCH zu Hex
  */
 function oklchToHex(oklch: string): string {
   if (!oklch) return "#808080"
@@ -38,31 +42,40 @@ function oklchToHex(oklch: string): string {
 }
 
 /**
+ * Konvertiert Hex zu RGB-String
+ */
+function hexToRgb(hex: string): string {
+  try {
+    const c = Color(hex)
+    const rgb = c.rgb().array()
+    return `rgb(${Math.round(rgb[0])}, ${Math.round(rgb[1])}, ${Math.round(rgb[2])})`
+  } catch {
+    return "rgb(128, 128, 128)"
+  }
+}
+
+/**
  * ColorPairSwatch - Zeigt ein Farbpaar als breites Rechteck (256×64)
  *
- * Äußeres Rechteck: Background-Farbe (klickbar → Color-Picker)
- * Inneres Rechteck: Foreground-Farbe (links zentriert, klickbar → Color-Picker)
- * Reset-Icon oben rechts: Setzt auf Original-Theme-Werte zurück
+ * Layout: Rechteck LINKS, Beschreibung RECHTS (3 Zeilen)
  *
- * Dark Mode wird automatisch berechnet und nicht angezeigt.
+ * Verwendet ColorPicker für die Farbauswahl.
  */
 export function ColorPairSwatch({
   tokenName,
   foregroundTokenName,
-  label,
+  name,
+  description,
 }: ColorPairSwatchProps): React.ReactElement {
   const { previewToken, getCurrentTokens } = useThemeEditor()
   const { theme: colorMode, resolvedTheme } = useColorMode()
 
   const isDarkMode = colorMode === "dark" || (colorMode === "system" && resolvedTheme === "dark")
 
-  // Hidden Color Inputs
-  const bgInputRef = useRef<HTMLInputElement>(null)
-  const fgInputRef = useRef<HTMLInputElement>(null)
-
-  // Aktuelle Werte (Hex für Color-Picker)
-  const [bgValue, setBgValue] = useState("#808080")
-  const [fgValue, setFgValue] = useState("#808080")
+  // Aktuelle Werte
+  const [bgHex, setBgHex] = useState("#808080")
+  const [fgHex, setFgHex] = useState("#808080")
+  const [bgOklch, setBgOklch] = useState("")
 
   // Original-Werte (für Reset)
   const [originalBg, setOriginalBg] = useState<{ light: string; dark: string }>({
@@ -86,8 +99,9 @@ export function ColorPairSwatch({
       const currentBgValue = isDarkMode ? bgToken.dark : bgToken.light
       const currentFgValue = isDarkMode ? fgToken.dark : fgToken.light
 
-      setBgValue(oklchToHex(currentBgValue))
-      setFgValue(oklchToHex(currentFgValue))
+      setBgHex(oklchToHex(currentBgValue))
+      setFgHex(oklchToHex(currentFgValue))
+      setBgOklch(currentBgValue)
 
       setOriginalBg((prev) => {
         if (isDarkMode) {
@@ -110,9 +124,8 @@ export function ColorPairSwatch({
   }, [tokenName, foregroundTokenName, getCurrentTokens, isDarkMode])
 
   const handleBgChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const hex = e.target.value
-      setBgValue(hex)
+    (hex: string) => {
+      setBgHex(hex)
       if (isDarkMode) {
         previewToken(tokenName, undefined, hex)
       } else {
@@ -123,9 +136,8 @@ export function ColorPairSwatch({
   )
 
   const handleFgChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const hex = e.target.value
-      setFgValue(hex)
+    (hex: string) => {
+      setFgHex(hex)
       if (isDarkMode) {
         previewToken(foregroundTokenName, undefined, hex)
       } else {
@@ -142,7 +154,7 @@ export function ColorPairSwatch({
       const fgOriginal = isDarkMode ? originalFg.dark : originalFg.light
 
       if (bgOriginal) {
-        setBgValue(oklchToHex(bgOriginal))
+        setBgHex(oklchToHex(bgOriginal))
         if (isDarkMode) {
           previewToken(tokenName, undefined, bgOriginal)
         } else {
@@ -150,7 +162,7 @@ export function ColorPairSwatch({
         }
       }
       if (fgOriginal) {
-        setFgValue(oklchToHex(fgOriginal))
+        setFgHex(oklchToHex(fgOriginal))
         if (isDarkMode) {
           previewToken(foregroundTokenName, undefined, fgOriginal)
         } else {
@@ -161,72 +173,41 @@ export function ColorPairSwatch({
     [tokenName, foregroundTokenName, originalBg, originalFg, previewToken, isDarkMode]
   )
 
-  const handleBgClick = useCallback(() => {
-    bgInputRef.current?.click()
-  }, [])
-
-  const handleFgClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation()
-    fgInputRef.current?.click()
-  }, [])
-
-  // Inneres Rechteck: 90×26px (70% von 128px Breite, 20% von 128px Höhe aus altem Design)
-  // Padding: 12px (gleich oben/unten/links)
+  // Inneres Rechteck: 90×26px
   const innerPadding = 12
   const innerWidth = 90
   const innerHeight = 26
 
   return (
-    <div className="flex items-center gap-4">
-      {/* Label links */}
-      <span className="text-muted-foreground w-32 shrink-0 text-sm">{label}</span>
+    <div className="flex items-start gap-6">
+      {/* Swatch Container - LINKS */}
+      <div className="group relative h-16 w-64 shrink-0">
+        {/* Background Farbe - äußeres Rechteck */}
+        <ColorPicker value={bgHex} onChange={handleBgChange}>
+          <div
+            className="hover:ring-ring absolute inset-0 cursor-pointer rounded-lg border shadow-sm transition-all hover:ring-2"
+            style={{
+              backgroundColor: `var(${tokenName})`,
+              borderRadius: "var(--radius)",
+            }}
+          />
+        </ColorPicker>
 
-      {/* Swatch Container */}
-      <div className="group relative h-16 w-64">
-        {/* Hidden Color Inputs */}
-        {}
-        <input
-          ref={bgInputRef}
-          type="color"
-          value={bgValue}
-          onChange={handleBgChange}
-          className="sr-only"
-          tabIndex={-1}
-        />
-        {}
-        <input
-          ref={fgInputRef}
-          type="color"
-          value={fgValue}
-          onChange={handleFgChange}
-          className="sr-only"
-          tabIndex={-1}
-        />
-
-        {/* Äußeres Rechteck - Background */}
-        <div
-          onClick={handleBgClick}
-          className="hover:ring-ring absolute inset-0 cursor-pointer rounded-lg border shadow-sm transition-all hover:ring-2"
-          style={{
-            backgroundColor: `var(${tokenName})`,
-            borderRadius: "var(--radius)",
-          }}
-        />
-
-        {/* Inneres Rechteck - Foreground (links zentriert) */}
-        <div
-          onClick={handleFgClick}
-          className="hover:ring-ring absolute z-10 cursor-pointer rounded-sm transition-all hover:ring-2"
-          style={{
-            backgroundColor: `var(${foregroundTokenName})`,
-            width: innerWidth,
-            height: innerHeight,
-            left: innerPadding,
-            top: "50%",
-            transform: "translateY(-50%)",
-            borderRadius: "var(--radius-sm)",
-          }}
-        />
+        {/* Foreground Farbe - inneres Rechteck (links zentriert) */}
+        <ColorPicker value={fgHex} onChange={handleFgChange}>
+          <div
+            className="hover:ring-ring absolute z-10 cursor-pointer rounded-sm transition-all hover:ring-2"
+            style={{
+              backgroundColor: `var(${foregroundTokenName})`,
+              width: innerWidth,
+              height: innerHeight,
+              left: innerPadding,
+              top: "50%",
+              transform: "translateY(-50%)",
+              borderRadius: "var(--radius-sm)",
+            }}
+          />
+        </ColorPicker>
 
         {/* Reset-Icon oben rechts */}
         <Button
@@ -238,6 +219,20 @@ export function ColorPairSwatch({
         >
           <RotateCcw className="text-muted-foreground size-3" />
         </Button>
+      </div>
+
+      {/* Beschreibung - RECHTS (3 Zeilen) */}
+      <div className="flex min-w-0 flex-1 flex-col py-1">
+        {/* Zeile 1: Name */}
+        <span className="text-foreground text-sm font-medium">{name}</span>
+        {/* Zeile 2: Beschreibung */}
+        <span className="text-muted-foreground truncate text-xs">{description}</span>
+        {/* Zeile 3: Farbwerte */}
+        <div className="text-muted-foreground flex gap-4 font-mono text-xs">
+          <span title={bgOklch}>{bgOklch.substring(0, 25) || bgHex}</span>
+          <span className="opacity-50">|</span>
+          <span>{hexToRgb(bgHex)}</span>
+        </div>
       </div>
     </div>
   )
