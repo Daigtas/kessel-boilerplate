@@ -14,7 +14,7 @@
 
 "use client"
 
-import { useEffect, useCallback } from "react"
+import { useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { AssistantRuntimeProvider } from "@assistant-ui/react"
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk"
@@ -28,6 +28,12 @@ import {
   collectAvailableActions,
 } from "@/lib/ai-chat/context-collector"
 import type { AIAction } from "@/lib/ai/ai-registry-context"
+
+/** Typ für Manifest-Komponenten */
+interface ManifestComponent {
+  id: string
+  route?: string
+}
 
 /**
  * Global Window Interface für aiRegistry
@@ -156,6 +162,122 @@ export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement
   // da collectAvailableActions auch window.aiRegistry verwendet
   // und die React Context-Version möglicherweise eine veraltete actions Map hat
 
+  // Manifest für Route-Lookup (für sofortige Navigation in handleToolCall)
+  const manifestRef = useRef<ManifestComponent[]>([])
+
+  // Lade Manifest beim Mount
+  useEffect(() => {
+    fetch("/ai-manifest.json")
+      .then((res) => res.json())
+      .then((data: { components?: ManifestComponent[] }) => {
+        manifestRef.current = data.components ?? []
+        console.warn("[AIChatPanel] Manifest loaded:", manifestRef.current.length, "components")
+      })
+      .catch((err) => {
+        console.error("[AIChatPanel] Failed to load manifest:", err)
+      })
+  }, [])
+
+  // Nach Navigation: Prüfe ob eine pendingUIAction ausgeführt werden soll
+  // Verwendet Polling, da die AIInteractable Komponente möglicherweise noch nicht registriert ist
+  useEffect(() => {
+    const pendingActionStr = sessionStorage.getItem("pendingUIAction")
+    if (!pendingActionStr) return
+
+    let cancelled = false
+    let pollCount = 0
+    const maxPolls = 20 // 20 * 250ms = 5 Sekunden max
+
+    const executePendingAction = async () => {
+      try {
+        const pendingAction = JSON.parse(pendingActionStr) as {
+          actionId: string
+          timestamp: number
+        }
+
+        // Aktion ist max 30 Sekunden gültig
+        if (Date.now() - pendingAction.timestamp > 30000) {
+          sessionStorage.removeItem("pendingUIAction")
+          return
+        }
+
+        console.warn(
+          "[AIChatPanel] 🚀 Found pending UI-Action after navigation:",
+          pendingAction.actionId
+        )
+
+        // Polling: Warte bis die Aktion in der Registry verfügbar ist
+        const pollForAction = async (): Promise<void> => {
+          if (cancelled) return
+
+          pollCount++
+          const availableActions = window.aiRegistry?.getAvailableActions() ?? []
+          const actionExists = availableActions.some((a) => a.id === pendingAction.actionId)
+
+          if (actionExists) {
+            console.warn(
+              "[AIChatPanel] ✅ Action found in registry after",
+              pollCount,
+              "polls. Executing..."
+            )
+            sessionStorage.removeItem("pendingUIAction")
+
+            try {
+              const actionResult = await (window.aiRegistry?.executeAction(
+                pendingAction.actionId
+              ) ?? Promise.resolve({ success: false, message: "aiRegistry nicht verfügbar" }))
+
+              if (actionResult.success) {
+                console.warn(
+                  "[AIChatPanel] ✅ Pending UI-Action executed successfully:",
+                  actionResult.message
+                )
+              } else {
+                console.error("[AIChatPanel] ❌ Pending UI-Action failed:", actionResult.message)
+              }
+            } catch (error) {
+              console.error("[AIChatPanel] ❌ Error executing pending UI-Action:", error)
+            }
+          } else if (pollCount < maxPolls) {
+            // Action noch nicht verfügbar, weiter warten
+            console.warn(
+              "[AIChatPanel] ⏳ Action not yet in registry, polling...",
+              pollCount,
+              "/",
+              maxPolls
+            )
+            setTimeout(pollForAction, 250)
+          } else {
+            // Timeout erreicht
+            console.error(
+              "[AIChatPanel] ❌ Timeout: Action",
+              pendingAction.actionId,
+              "not found after",
+              maxPolls,
+              "polls"
+            )
+            console.warn(
+              "[AIChatPanel] Available actions:",
+              availableActions.map((a) => a.id)
+            )
+            sessionStorage.removeItem("pendingUIAction")
+          }
+        }
+
+        // Starte Polling nach kurzem Delay (für initiales Rendering)
+        setTimeout(pollForAction, 500)
+      } catch {
+        sessionStorage.removeItem("pendingUIAction")
+      }
+    }
+
+    executePendingAction()
+
+    return () => {
+      cancelled = true
+    }
+  }, [pathname]) // Re-run bei Route-Wechsel
+
   // Write-Tool Prefixes die DB-Änderungen auslösen
   const WRITE_TOOL_PREFIXES = ["insert_", "update_", "delete_", "create_user", "delete_user"]
 
@@ -262,6 +384,27 @@ export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement
                 console.error("[AIChatPanel] ❌ Error executing Theme-Action:", error)
               }
             }
+            // Prüfe auf navigate_then_execute (Aktion auf anderer Seite)
+            else if (result.__ui_action === "navigate_then_execute" && result.navigateTo) {
+              console.warn(
+                "[AIChatPanel] 🚀 Navigation required! Target:",
+                result.navigateTo,
+                "Action:",
+                result.id
+              )
+              // Speichere Aktion für nach der Navigation
+              if (result.id) {
+                sessionStorage.setItem(
+                  "pendingUIAction",
+                  JSON.stringify({
+                    actionId: result.id,
+                    timestamp: Date.now(),
+                  })
+                )
+              }
+              // Navigiere zur Zielseite
+              router.push(result.navigateTo as string)
+            }
             // Prüfe beide möglichen Formate: __ui_action + id ODER action_id
             else {
               const uiActionId = result.__ui_action === "execute" ? result.id : result.action_id
@@ -353,40 +496,83 @@ export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement
 
   // Callback für Tool-Calls während des Streamings
   // WICHTIG: onToolCall wird aufgerufen, wenn ein Tool aufgerufen wird, nicht wenn das Result kommt
-  // Für Tool-Results müssen wir auf handleFinish warten oder einen anderen Callback verwenden
+  // Dies ermöglicht sofortige Navigation/Ausführung BEVOR der Text gestreamt wird
   const handleToolCall = useCallback(
-    async ({ toolCall }: { toolCall: { toolName?: string; args?: unknown } }) => {
+    async ({ toolCall }: { toolCall: { toolName?: string; args?: unknown; input?: unknown } }) => {
       console.warn("[AIChatPanel] ===== handleToolCall CALLED =====")
       console.warn("[AIChatPanel] Tool call:", JSON.stringify(toolCall, null, 2))
 
       // Prüfe ob es ein UI-Action Tool ist
       if (toolCall.toolName === "execute_ui_action") {
-        const args = toolCall.args as { action_id?: string }
-        const uiActionId = args?.action_id
+        // WICHTIG: assistant-ui sendet 'input', nicht 'args'!
+        const inputData = (toolCall.input ?? toolCall.args) as { action_id?: string } | undefined
+        const uiActionId = inputData?.action_id
 
         if (uiActionId) {
           console.warn("[AIChatPanel] ✅ UI-Action detected in tool call! ID:", uiActionId)
-          console.warn("[AIChatPanel] Calling executeAction via window.aiRegistry...")
-          try {
-            // Führe die Action sofort aus, wenn das Tool aufgerufen wird
-            // (nicht erst wenn das Result kommt, da das Result nur eine Bestätigung ist)
-            const actionResult = await (window.aiRegistry?.executeAction(uiActionId) ??
-              Promise.resolve({ success: false, message: "aiRegistry nicht verfügbar" }))
-            if (actionResult.success) {
-              console.warn(
-                "[AIChatPanel] ✅ UI-Action executed successfully:",
-                actionResult.message
-              )
-            } else {
-              console.error("[AIChatPanel] ❌ UI-Action failed:", actionResult.message)
+
+          // SCHRITT 1: Prüfe ob Aktion lokal verfügbar ist
+          const localActions = window.aiRegistry?.getAvailableActions() ?? []
+          const isLocallyAvailable = localActions.some((a) => a.id === uiActionId)
+
+          if (isLocallyAvailable) {
+            // Aktion ist lokal → sofort ausführen
+            console.warn("[AIChatPanel] Action is locally available, executing immediately...")
+            try {
+              const actionResult = await (window.aiRegistry?.executeAction(uiActionId) ??
+                Promise.resolve({ success: false, message: "aiRegistry nicht verfügbar" }))
+              if (actionResult.success) {
+                console.warn(
+                  "[AIChatPanel] ✅ UI-Action executed successfully:",
+                  actionResult.message
+                )
+              } else {
+                console.error("[AIChatPanel] ❌ UI-Action failed:", actionResult.message)
+              }
+            } catch (error) {
+              console.error("[AIChatPanel] ❌ Error executing UI-Action:", error)
             }
-          } catch (error) {
-            console.error("[AIChatPanel] ❌ Error executing UI-Action:", error)
+          } else {
+            // SCHRITT 2: Aktion nicht lokal → Im Manifest nach Route suchen
+            console.warn("[AIChatPanel] Action not locally available, checking manifest...")
+            console.warn(
+              "[AIChatPanel] Manifest IDs:",
+              manifestRef.current.map((c) => c.id).join(", ")
+            )
+            const manifestAction = manifestRef.current.find((c) => c.id === uiActionId)
+            console.warn("[AIChatPanel] Found manifestAction:", JSON.stringify(manifestAction))
+
+            if (manifestAction?.route && manifestAction.route !== "global") {
+              // Aktion ist auf anderer Seite → sofort navigieren
+              console.warn(
+                "[AIChatPanel] 🚀 Immediate navigation to:",
+                manifestAction.route,
+                "for action:",
+                uiActionId
+              )
+
+              // Speichere pendingAction für nach der Navigation
+              sessionStorage.setItem(
+                "pendingUIAction",
+                JSON.stringify({
+                  actionId: uiActionId,
+                  timestamp: Date.now(),
+                })
+              )
+
+              // Navigiere SOFORT (vor dem Text-Streaming)
+              router.push(manifestAction.route)
+            } else {
+              console.warn(
+                "[AIChatPanel] ⚠️ Action not found in manifest or is global:",
+                uiActionId
+              )
+            }
           }
         }
       }
     },
-    []
+    [router]
   )
 
   // useChatRuntime mit Transport

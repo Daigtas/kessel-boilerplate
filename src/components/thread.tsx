@@ -36,9 +36,10 @@ export const Thread: FC = () => {
         ["--thread-max-width" as string]: "44rem",
       }}
     >
+      {/* Scrollbarer Bereich für Messages - nimmt verfügbaren Platz ein */}
       <ThreadPrimitive.Viewport
-        turnAnchor="top"
-        className="aui-thread-viewport relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth px-4 pt-4"
+        turnAnchor="end"
+        className="aui-thread-viewport min-h-0 flex-1 overflow-y-auto scroll-smooth px-4 pt-4"
       >
         <ThreadPrimitive.If empty>
           <ThreadWelcome />
@@ -51,12 +52,13 @@ export const Thread: FC = () => {
             AssistantMessage,
           }}
         />
-
-        <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer bg-muted sticky bottom-0 mx-auto mt-auto flex w-full max-w-(--thread-max-width) flex-col gap-4 overflow-visible rounded-t-xl pb-4 md:pb-6">
-          <ThreadScrollToBottom />
-          <Composer />
-        </ThreadPrimitive.ViewportFooter>
       </ThreadPrimitive.Viewport>
+
+      {/* Composer AUSSERHALB des Viewports - bleibt immer am unteren Rand */}
+      <div className="aui-thread-viewport-footer bg-muted relative mx-auto flex w-full max-w-(--thread-max-width) shrink-0 flex-col gap-4 rounded-t-xl px-4 pt-2 pb-4 md:pb-6">
+        <ThreadScrollToBottom />
+        <Composer />
+      </div>
     </ThreadPrimitive.Root>
   )
 }
@@ -81,7 +83,7 @@ const ThreadWelcome: FC = () => {
       <div className="aui-thread-welcome-center flex w-full grow flex-col items-center justify-center">
         <div className="aui-thread-welcome-message flex size-full flex-col justify-center px-4">
           <h1 className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in text-2xl font-semibold duration-200">
-            Hallo! 👋
+            Hallo!
           </h1>
           <p className="aui-thread-welcome-message-inner fade-in slide-in-from-bottom-1 animate-in text-muted-foreground text-xl delay-75 duration-200">
             Wie kann ich dir helfen?

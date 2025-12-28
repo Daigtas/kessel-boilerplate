@@ -21,6 +21,7 @@ import { generateUIActionTool, type UIAction } from "@/lib/ai/special-tools"
 import { loadWikiContent } from "@/lib/ai-chat/wiki-content"
 import { createClient } from "@/utils/supabase/server"
 import type { UserInteraction } from "@/lib/ai-chat/types"
+import { loadAIManifestServer } from "@/lib/ai/ai-manifest-loader"
 
 // Streaming-Timeout erhöhen
 export const maxDuration = 60
@@ -313,17 +314,56 @@ export async function POST(req: Request) {
       console.log("[Chat API] Tools loaded:", availableToolNames.join(", ") || "none")
     }
 
-    // 8.5. UI-Action Tool hinzufügen wenn Actions verfügbar sind
-    // UI-Actions sind immer verfügbar, auch ohne Tool-Routing
-    if (availableActions && availableActions.length > 0) {
-      const uiActionTool = generateUIActionTool(availableActions)
+    // 8.5. UI-Action Tool: Alle Aktionen aus Manifest laden
+    // Das Manifest enthält ALLE Komponenten der App, nicht nur die aktuell gerenderten
+    const allManifestActions = await loadAIManifestServer()
+    const currentRoute = route ?? "/"
+
+    // Aktionen nach Verfügbarkeit gruppieren
+    const availableOnCurrentPage: UIAction[] = []
+    const requiresNavigation: UIAction[] = []
+
+    for (const action of allManifestActions) {
+      const actionRoute = action.route ?? "global"
+      const uiAction: UIAction = {
+        id: action.id,
+        action: action.action,
+        target: action.target,
+        description: action.description,
+        keywords: action.keywords,
+        category: action.category,
+        route: actionRoute, // WICHTIG: Route für Navigation mitgeben
+      }
+
+      if (actionRoute === "global" || actionRoute === currentRoute) {
+        availableOnCurrentPage.push(uiAction)
+      } else {
+        // Erweitere Beschreibung mit Route-Info für Navigation
+        requiresNavigation.push({
+          ...uiAction,
+          description: `${action.description} [Seite: ${actionRoute}]`,
+        })
+      }
+    }
+
+    // Alle Aktionen zusammenführen für das Tool
+    const allUIActions = [...availableOnCurrentPage, ...requiresNavigation]
+
+    if (allUIActions.length > 0) {
+      const uiActionTool = generateUIActionTool(allUIActions)
       if (tools) {
         Object.assign(tools, uiActionTool)
       } else {
         tools = uiActionTool
       }
       availableToolNames.push(...Object.keys(uiActionTool))
-      console.log("[Chat API] UI-Action Tool loaded:", availableActions.length, "actions available")
+      console.log(
+        "[Chat API] UI-Action Tool loaded:",
+        availableOnCurrentPage.length,
+        "on current page,",
+        requiresNavigation.length,
+        "require navigation"
+      )
     }
 
     // 9. Modell aus Router-Decision verwenden (oder explizit überschrieben)

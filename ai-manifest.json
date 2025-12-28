@@ -8,7 +8,8 @@
       "target": "/module-1/sub-1",
       "category": "navigation",
       "keywords": ["modul 1.1", "sub-modul 1.1", "module 1.1", "sub-module 1.1"],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "global"
     },
     {
       "id": "nav-module-1-2",
@@ -271,7 +272,8 @@
         "einklappen",
         "ausklappen"
       ],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "global"
     },
     {
       "id": "toggle-explorer",
@@ -280,7 +282,8 @@
       "target": "explorer",
       "category": "layout",
       "keywords": ["explorer", "datei-browser", "file-browser", "panel", "öffnen", "schließen"],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "global"
     },
     {
       "id": "toggle-assist-chat",
@@ -289,7 +292,8 @@
       "target": "assist-chat",
       "category": "layout",
       "keywords": ["chat", "ki", "ai", "assistent", "hilfe", "help", "assist", "panel"],
-      "requiredRole": "user"
+      "requiredRole": "user",
+      "route": "global"
     },
     {
       "id": "toggle-assist-wiki",
@@ -298,7 +302,8 @@
       "target": "assist-wiki",
       "category": "layout",
       "keywords": ["wiki", "dokumentation", "documentation", "hilfe", "help", "panel"],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "global"
     },
     {
       "id": "toggle-assist-comments",
@@ -307,7 +312,8 @@
       "target": "assist-comments",
       "category": "layout",
       "keywords": ["comments", "kommentare", "panel"],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "global"
     },
     {
       "id": "toggle-assist-cart",
@@ -316,11 +322,12 @@
       "target": "assist-cart",
       "category": "layout",
       "keywords": ["cart", "warenkorb", "shopping", "panel"],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "global"
     },
     {
       "id": "theme-dark-mode-toggle",
-      "description": "Schaltet zwischen Dark Mode und Light Mode um",
+      "description": "Schaltet zwischen Dark Mode und Light Mode um. Hinweis: Befindet sich auf der Theme-Seite - bei Bedarf erst dorthin navigieren.",
       "action": "toggle",
       "target": "color-mode",
       "category": "settings",
@@ -337,7 +344,8 @@
         "dark",
         "light"
       ],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "/account/design-system/theme-management"
     },
     {
       "id": "assist-panel-tabs",
@@ -346,7 +354,8 @@
       "target": "assist-panel",
       "category": "layout",
       "keywords": ["tabs", "assist", "chat", "wiki", "kommentare", "warenkorb", "panel"],
-      "requiredRole": "public"
+      "requiredRole": "public",
+      "route": "global"
     }
   ]
 }

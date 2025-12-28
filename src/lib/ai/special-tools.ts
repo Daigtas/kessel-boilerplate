@@ -267,7 +267,7 @@ export function generateSpecialTools(ctx: ToolExecutionContext): ToolSet {
 }
 
 /**
- * UI Action aus dem Client
+ * UI Action aus dem Client oder Manifest
  */
 export interface UIAction {
   id: string
@@ -276,6 +276,13 @@ export interface UIAction {
   description: string
   keywords: string[]
   category: string
+  /**
+   * Route wo die Komponente zu finden ist.
+   * - "global" = auf allen Seiten verfügbar
+   * - "/path/to/page" = nur auf dieser spezifischen Seite
+   * - undefined = auf der aktuellen Seite (von Client gesendet)
+   */
+  route?: string
 }
 
 /**
@@ -399,11 +406,14 @@ function executeUIActionTool(availableActions: UIAction[]): ToolSet {
     {} as Record<string, UIAction[]>
   )
 
-  // Erstelle detaillierte Description mit Keywords
+  // Erstelle detaillierte Description mit Keywords und Route-Info
   const categoryDescriptions = Object.entries(byCategory)
     .map(([category, actions]) => {
       const actionList = actions
-        .map((a) => `  - ${a.id}: ${a.description} [Keywords: ${a.keywords.join(", ")}]`)
+        .map((a) => {
+          const routeInfo = a.route && a.route !== "global" ? ` [Seite: ${a.route}]` : ""
+          return `  - ${a.id}: ${a.description}${routeInfo} [Keywords: ${a.keywords.join(", ")}]`
+        })
         .join("\n")
       return `${category}:\n${actionList}`
     })
@@ -414,6 +424,8 @@ function executeUIActionTool(availableActions: UIAction[]): ToolSet {
       description: `Führt eine UI-Aktion aus. 
 
 **WICHTIG:** Verwende zuerst search_ui_components wenn der User nach einem UI-Element fragt!
+
+Manche Aktionen befinden sich auf anderen Seiten - in diesem Fall wird erst zur Seite navigiert.
 
 Verfügbare Aktionen nach Kategorie:
 ${categoryDescriptions}`,
@@ -426,6 +438,19 @@ ${categoryDescriptions}`,
         const action = availableActions.find((a) => a.id === action_id)
         if (!action) {
           throw new Error(`Action "${action_id}" nicht gefunden`)
+        }
+
+        // Prüfe ob Navigation erforderlich ist
+        const requiresNavigation = action.route && action.route !== "global"
+
+        if (requiresNavigation) {
+          return {
+            __ui_action: "navigate_then_execute",
+            id: action_id,
+            description: action.description,
+            navigateTo: action.route,
+            message: `Navigiere zu ${action.route} und führe dann aus: ${action.description}`,
+          }
         }
 
         return {

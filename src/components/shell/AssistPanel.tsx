@@ -66,31 +66,32 @@ export function AssistPanel({
         description="Wechselt zwischen den Assist-Panel Tabs (Chat, Wiki, Kommentare, Warenkorb)"
         keywords={["tabs", "assist", "chat", "wiki", "kommentare", "warenkorb", "panel"]}
         category="layout"
+        className="flex min-h-0 flex-1 flex-col"
       >
         <Tabs
           value={activePanel ?? "chat"}
           onValueChange={(value) => setPanel(value as AssistPanelType)}
-          className="flex flex-1 flex-col overflow-hidden"
+          className="flex min-h-0 flex-1 flex-col"
         >
           {/* Tab Contents */}
           {/* forceMount für Chat: Verhindert Unmounting bei Tab-Wechsel, erhält Chat-State */}
           <TabsContent
             value="chat"
-            className="mt-0 flex-1 overflow-hidden data-[state=inactive]:hidden"
+            className="mt-0 min-h-0 flex-1 data-[state=inactive]:hidden"
             forceMount
           >
             {chatContent ?? <AIChatPanel />}
           </TabsContent>
 
-          <TabsContent value="wiki" className="mt-0 flex-1 overflow-hidden">
+          <TabsContent value="wiki" className="mt-0 min-h-0 flex-1 overflow-auto">
             {wikiContent ?? <DefaultWikiContent />}
           </TabsContent>
 
-          <TabsContent value="comments" className="mt-0 flex-1 overflow-hidden">
+          <TabsContent value="comments" className="mt-0 min-h-0 flex-1 overflow-hidden">
             {commentsContent ?? <DefaultCommentsContent />}
           </TabsContent>
 
-          <TabsContent value="cart" className="mt-0 flex-1 overflow-hidden">
+          <TabsContent value="cart" className="mt-0 min-h-0 flex-1 overflow-hidden">
             {cartContent ?? <DefaultCartContent />}
           </TabsContent>
         </Tabs>

@@ -89,6 +89,17 @@ export const AIComponentSchema = z.object({
   requiredRole: RequiredRole.optional()
     .default("public")
     .describe("Minimale Rolle für diese Aktion"),
+
+  /**
+   * Route/Seite wo diese Komponente zu finden ist.
+   * - "global" = auf allen Seiten verfügbar (z.B. Navbar-Items)
+   * - "/path/to/page" = nur auf dieser spezifischen Seite
+   * - undefined = Legacy-Komponente (wird als "global" behandelt)
+   */
+  route: z
+    .string()
+    .optional()
+    .describe("Route wo die Komponente zu finden ist ('global' oder '/path/to/page')"),
 })
 
 export type AIComponent = z.infer<typeof AIComponentSchema>
