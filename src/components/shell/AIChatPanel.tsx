@@ -477,16 +477,22 @@ export function AIChatPanel({ className }: AIChatPanelProps): React.ReactElement
       }
 
       // Prüfe ob Write-Tools aufgerufen wurden
-      const hasWriteToolCall = message.parts?.some(
-        (part) =>
-          part.type === "tool-call" &&
-          WRITE_TOOL_PREFIXES.some((prefix) => part.toolName?.startsWith(prefix))
-      )
+      // AI SDK v5 Format: type ist "tool-{toolName}" (z.B. "tool-update_roles")
+      const hasWriteToolCall = message.parts?.some((part) => {
+        if (!part.type?.startsWith("tool-")) return false
+        // Extrahiere Tool-Namen aus dem Type (z.B. "tool-update_roles" → "update_roles")
+        const toolName = part.type.replace("tool-", "")
+        const isWriteTool = WRITE_TOOL_PREFIXES.some((prefix) => toolName.startsWith(prefix))
+        if (isWriteTool) {
+          console.warn("[AIChatPanel] ✅ Write-Tool detected:", toolName)
+        }
+        return isWriteTool
+      })
 
       if (hasWriteToolCall) {
         // Kurze Verzögerung für DB-Konsistenz, dann Seite refreshen
+        console.warn("[AIChatPanel] 🔄 Triggering page refresh after DB modification...")
         setTimeout(() => {
-          console.warn("[AIChatPanel] Write-Tool detected, refreshing page data...")
           router.refresh()
         }, 300)
       }
