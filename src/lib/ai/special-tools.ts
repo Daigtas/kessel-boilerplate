@@ -19,7 +19,11 @@ import type { ToolExecutionContext } from "./tool-executor"
 import { generateThemeTools } from "./theme-tools"
 
 /**
- * Prüft ob der aktuelle User Admin ist
+ * Prüft ob der aktuelle User Admin oder Superuser ist
+ *
+ * Unterstützt sowohl:
+ * - Legacy: profiles.role Spalte
+ * - Neu: profiles.role_id → roles.name (JOIN)
  */
 async function isAdmin(userId: string): Promise<boolean> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -34,14 +38,27 @@ async function isAdmin(userId: string): Promise<boolean> {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const { data, error } = await supabase.from("profiles").select("role").eq("id", userId).single()
+  // Hole role (legacy) und role_id mit JOIN zur roles-Tabelle
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("role, role_id, roles:role_id(name)")
+    .eq("id", userId)
+    .single()
 
   if (error || !data) {
     console.error("[SpecialTools] Error checking admin status:", error)
     return false
   }
 
-  return data.role === "admin"
+  // Prüfe zuerst das neue System (role_id → roles.name)
+  // Supabase gibt bei .single() ein Objekt zurück, bei Array-JOINs evtl. ein Array
+  const rolesData = Array.isArray(data.roles) ? data.roles[0] : data.roles
+  if (rolesData?.name) {
+    return rolesData.name === "admin" || rolesData.name === "superuser"
+  }
+
+  // Fallback: Legacy role Spalte
+  return data.role === "admin" || data.role === "superuser"
 }
 
 /**
