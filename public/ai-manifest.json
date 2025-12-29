@@ -121,11 +121,28 @@
     },
     {
       "id": "nav-about-impressum",
-      "description": "Öffnet die Impressum / Kontakt Seite",
+      "description": "Öffnet die Impressum Seite",
       "action": "navigate",
       "target": "/ueber-die-app/impressum",
       "category": "navigation",
       "keywords": ["impressum", "kontakt", "contact", "legal", "rechtliches"],
+      "requiredRole": "public"
+    },
+    {
+      "id": "nav-about-datenschutz",
+      "description": "Öffnet die Datenschutzerklärung",
+      "action": "navigate",
+      "target": "/ueber-die-app/datenschutzerklaerung",
+      "category": "navigation",
+      "keywords": [
+        "datenschutz",
+        "datenschutzerklaerung",
+        "privacy",
+        "privacy-policy",
+        "dsgvo",
+        "gdpr",
+        "personenbezogene daten"
+      ],
       "requiredRole": "public"
     },
     {

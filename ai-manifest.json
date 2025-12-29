@@ -120,6 +120,23 @@
       "requiredRole": "public"
     },
     {
+      "id": "nav-about-datenschutz",
+      "description": "Öffnet die Datenschutzerklärung",
+      "action": "navigate",
+      "target": "/ueber-die-app/datenschutzerklaerung",
+      "category": "navigation",
+      "keywords": [
+        "datenschutz",
+        "datenschutzerklaerung",
+        "privacy",
+        "privacy-policy",
+        "dsgvo",
+        "gdpr",
+        "personenbezogene daten"
+      ],
+      "requiredRole": "public"
+    },
+    {
       "id": "nav-account-profile",
       "description": "Öffnet die Benutzer-Profil Seite",
       "action": "navigate",

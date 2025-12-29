@@ -6,19 +6,19 @@ import { PageContent, PageHeader } from "@/components/shell"
 import { MarkdownViewer } from "@/components/content"
 
 /**
- * Impressum Seite
+ * Datenschutzerklärung Seite
  *
- * Lädt und rendert den Impressum-Content aus src/content/impressum.md.
+ * Lädt und rendert den Datenschutz-Content aus src/content/datenschutz.md.
  * Verwendet die gleiche Markdown-Rendering-Technologie wie das App-Wiki.
  */
-export default function ImpressumPage(): React.ReactElement {
+export default function DatenschutzPage(): React.ReactElement {
   const [content, setContent] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function loadContent() {
       try {
-        const response = await fetch("/api/content/impressum", {
+        const response = await fetch("/api/content/datenschutz", {
           cache: "no-store",
           headers: {
             "Cache-Control": "no-cache",
@@ -29,7 +29,7 @@ export default function ImpressumPage(): React.ReactElement {
           setContent(markdown)
         }
       } catch (error) {
-        console.error("Failed to load impressum content:", error)
+        console.error("Failed to load datenschutz content:", error)
       } finally {
         setIsLoading(false)
       }
@@ -41,7 +41,7 @@ export default function ImpressumPage(): React.ReactElement {
     return (
       <PageContent>
         <div className="flex h-64 items-center justify-center">
-          <div className="text-muted-foreground">Lade Impressum...</div>
+          <div className="text-muted-foreground">Lade Datenschutzerklärung...</div>
         </div>
       </PageContent>
     )
@@ -50,8 +50,8 @@ export default function ImpressumPage(): React.ReactElement {
   return (
     <PageContent>
       <PageHeader
-        title="Impressum"
-        description="Rechtliche Informationen und Kontaktmöglichkeiten"
+        title="Datenschutzerklärung"
+        description="Informationen zur Verarbeitung personenbezogener Daten"
         className="mb-8"
       />
       <MarkdownViewer content={content} />

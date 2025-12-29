@@ -5,6 +5,7 @@ import {
   User,
   Users,
   Shield,
+  ShieldCheck,
   LogOut,
   BookOpen,
   Lightbulb,
@@ -158,6 +159,14 @@ const aboutSection: NavSection = {
       label: "Impressum",
       icon: Mail,
       href: buildNavHref(SECTION_TITLES.ABOUT, "Impressum"),
+      requiredRoles: ["NoUser", "user", "admin"], // Oeffentlich
+      alwaysVisible: true, // Rechtlich erforderlich - kann nicht deaktiviert werden
+    },
+    {
+      id: "about-datenschutz",
+      label: "Datenschutzerklärung",
+      icon: ShieldCheck,
+      href: buildNavHref(SECTION_TITLES.ABOUT, "Datenschutzerklärung"),
       requiredRoles: ["NoUser", "user", "admin"], // Oeffentlich
       alwaysVisible: true, // Rechtlich erforderlich - kann nicht deaktiviert werden
     },
