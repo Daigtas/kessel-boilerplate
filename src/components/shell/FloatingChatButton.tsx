@@ -53,7 +53,7 @@ export function FloatingChatButton(): React.ReactElement {
           </Avatar>
           {/* X-Overlay wenn Chat offen */}
           {isOpen && (
-            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/20">
               <X className="text-destructive size-6" />
             </div>
           )}
