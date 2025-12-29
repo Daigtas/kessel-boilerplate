@@ -156,11 +156,11 @@ export function Navbar(): React.ReactElement {
           </nav>
         </ScrollArea>
 
-        {/* About & Account (fixiert unten) - immer vollständig sichtbar */}
+        {/* About & App-Verwaltung (fixiert unten) - immer vollständig sichtbar */}
         <div className="border-sidebar-border shrink-0 border-t">
-          {/* About Section */}
+          {/* App-Verwaltung Section (nur für Admin) */}
           {navigationConfig
-            .filter((section) => section.id === "about")
+            .filter((section) => section.id === "admin")
             .map((section) => {
               if (!isVisible(section)) return null
               return (
@@ -183,12 +183,14 @@ export function Navbar(): React.ReactElement {
               )
             })}
 
-          {/* Separator über volle Breite */}
-          <Separator />
+          {/* Separator über volle Breite (nur wenn App-Verwaltung sichtbar) */}
+          {navigationConfig.some((section) => section.id === "admin" && isVisible(section)) && (
+            <Separator />
+          )}
 
-          {/* Account Section */}
+          {/* About Section */}
           {navigationConfig
-            .filter((section) => section.id === "account")
+            .filter((section) => section.id === "about")
             .map((section) => {
               if (!isVisible(section)) return null
               return (

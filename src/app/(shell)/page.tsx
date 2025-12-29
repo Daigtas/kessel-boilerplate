@@ -1,9 +1,8 @@
 "use client"
 
-import { useEffect } from "react"
 import Link from "next/link"
 
-import { PageContent, useAssist } from "@/components/shell"
+import { PageContent } from "@/components/shell"
 import { useAuth } from "@/components/auth"
 import { appConfig } from "@/config/navigation"
 
@@ -14,12 +13,6 @@ import { appConfig } from "@/config/navigation"
  */
 export default function HomePage(): React.ReactElement {
   const { user, isLoading } = useAuth()
-  const { setOpen: setAssistOpen } = useAssist()
-
-  // Assist-Panel beim Laden öffnen
-  useEffect(() => {
-    setAssistOpen(true)
-  }, [setAssistOpen])
 
   // User-Name für die Begrüßung (Vorname oder Display-Name)
   // WICHTIG: Während isLoading immer "User" verwenden für konsistente SSR/Client Hydration
@@ -28,7 +21,7 @@ export default function HomePage(): React.ReactElement {
     : user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "User"
 
   return (
-    <PageContent showBreadcrumbs={false} showAssistActions={false}>
+    <PageContent showBreadcrumbs={false}>
       {/* Zentrierungs-Container: vertikal + horizontal zentriert */}
       {/* suppressHydrationWarning: Browser MCP fügt data-cursor-ref Attribute hinzu */}
       <div
@@ -61,7 +54,7 @@ export default function HomePage(): React.ReactElement {
               , um direkt zum App-Wiki zu gelangen.
             </p>
 
-            <p>Oder nutze den App-Chat in der rechten Side-Bar!</p>
+            <p>Oder nutze den App-Chat über den Floating Button unten rechts!</p>
             <p>
               Der App-Chat weiß ebenfalls alles und kann dir sogar die eine oder andere Aufgabe
               abnehmen.

@@ -8,8 +8,8 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 const STORAGE_KEYS = {
   navbarCollapsed: "shell-navbar-collapsed",
   explorerOpen: "shell-explorer-open",
-  assistOpen: "shell-assist-open",
-  assistPanel: "shell-assist-panel",
+  detailDrawerOpen: "shell-detail-drawer-open",
+  chatOverlayOpen: "shell-chat-overlay-open",
   panelWidths: "shell-panel-widths-px", // NEU: Pixel-basiert
 } as const
 
@@ -35,9 +35,10 @@ export const PANEL_CONSTRAINTS = {
 } as const
 
 /**
- * Verfügbare Assist-Panel-Typen
+ * Detail-Drawer Content Type
+ * Wird von Seiten gesetzt, um optionalen Detail-Content anzuzeigen
  */
-export type AssistPanelType = "chat" | "wiki" | "comments" | "cart" | null
+export type DetailDrawerContent = ReactNode | null
 
 /**
  * Panel-Breiten in Pixeln
@@ -56,10 +57,12 @@ export interface ShellState {
   navbarCollapsed: boolean
   /** Explorer-Panel (Spalte 2) ist sichtbar */
   explorerOpen: boolean
-  /** Assist-Panel (Spalte 4) ist sichtbar */
-  assistOpen: boolean
-  /** Aktives Assist-Panel */
-  activeAssistPanel: AssistPanelType
+  /** Detail-Drawer (Spalte 4) ist sichtbar */
+  detailDrawerOpen: boolean
+  /** Detail-Drawer Content (wird von Seiten gesetzt) */
+  detailDrawerContent: DetailDrawerContent
+  /** Chat-Overlay ist geöffnet */
+  chatOverlayOpen: boolean
   /** Panel-Breiten in PIXELN (stabil bei Toggle) */
   panelWidths: PanelWidths
   /** Transition aktiviert (nur während Navbar Collapse/Expand) */
@@ -78,12 +81,16 @@ export interface ShellContextValue extends ShellState {
   toggleExplorer: () => void
   /** Set Explorer Open */
   setExplorerOpen: (open: boolean) => void
-  /** Toggle Assist Panel */
-  toggleAssist: (panel?: AssistPanelType) => void
-  /** Set Assist Open */
-  setAssistOpen: (open: boolean) => void
-  /** Set Active Assist Panel */
-  setActiveAssistPanel: (panel: AssistPanelType) => void
+  /** Toggle Detail Drawer */
+  toggleDetailDrawer: () => void
+  /** Set Detail Drawer Open */
+  setDetailDrawerOpen: (open: boolean) => void
+  /** Set Detail Drawer Content */
+  setDetailDrawerContent: (content: DetailDrawerContent) => void
+  /** Toggle Chat Overlay */
+  toggleChatOverlay: () => void
+  /** Set Chat Overlay Open */
+  setChatOverlayOpen: (open: boolean) => void
   /** Update Panel-Breiten in Pixeln */
   updatePanelWidths: (widths: Partial<PanelWidths>) => void
   /** Enable/Disable Navbar Transition (für smooth collapse/expand) */
@@ -96,8 +103,9 @@ export interface ShellContextValue extends ShellState {
 const defaultState: ShellState = {
   navbarCollapsed: false,
   explorerOpen: false,
-  assistOpen: false,
-  activeAssistPanel: null,
+  detailDrawerOpen: false,
+  detailDrawerContent: null,
+  chatOverlayOpen: false,
   panelWidths: {
     navbar: DEFAULT_PANEL_WIDTHS.navbar,
     explorer: DEFAULT_PANEL_WIDTHS.explorer,
@@ -131,17 +139,34 @@ export function useExplorer() {
 }
 
 /**
- * Convenience Hook für Assist-Panel
+ * Convenience Hook für Detail-Drawer
  */
-export function useAssist() {
-  const { assistOpen, activeAssistPanel, toggleAssist, setAssistOpen, setActiveAssistPanel } =
-    useShell()
+export function useDetailDrawer() {
+  const {
+    detailDrawerOpen,
+    detailDrawerContent,
+    toggleDetailDrawer,
+    setDetailDrawerOpen,
+    setDetailDrawerContent,
+  } = useShell()
   return {
-    isOpen: assistOpen,
-    activePanel: activeAssistPanel,
-    toggle: toggleAssist,
-    setOpen: setAssistOpen,
-    setPanel: setActiveAssistPanel,
+    isOpen: detailDrawerOpen,
+    content: detailDrawerContent,
+    toggle: toggleDetailDrawer,
+    setOpen: setDetailDrawerOpen,
+    setContent: setDetailDrawerContent,
+  }
+}
+
+/**
+ * Convenience Hook für Chat-Overlay
+ */
+export function useChatOverlay() {
+  const { chatOverlayOpen, toggleChatOverlay, setChatOverlayOpen } = useShell()
+  return {
+    isOpen: chatOverlayOpen,
+    toggle: toggleChatOverlay,
+    setOpen: setChatOverlayOpen,
   }
 }
 
@@ -197,8 +222,8 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
       ...prev,
       navbarCollapsed: loadFromStorage(STORAGE_KEYS.navbarCollapsed, prev.navbarCollapsed),
       explorerOpen: loadFromStorage(STORAGE_KEYS.explorerOpen, prev.explorerOpen),
-      assistOpen: loadFromStorage(STORAGE_KEYS.assistOpen, prev.assistOpen),
-      activeAssistPanel: loadFromStorage(STORAGE_KEYS.assistPanel, prev.activeAssistPanel),
+      detailDrawerOpen: loadFromStorage(STORAGE_KEYS.detailDrawerOpen, prev.detailDrawerOpen),
+      chatOverlayOpen: loadFromStorage(STORAGE_KEYS.chatOverlayOpen, prev.chatOverlayOpen),
       panelWidths: loadFromStorage(STORAGE_KEYS.panelWidths, prev.panelWidths),
     }))
   }, [])
@@ -216,9 +241,13 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
 
   useEffect(() => {
     if (!mounted) return
-    saveToStorage(STORAGE_KEYS.assistOpen, state.assistOpen)
-    saveToStorage(STORAGE_KEYS.assistPanel, state.activeAssistPanel)
-  }, [state.assistOpen, state.activeAssistPanel, mounted])
+    saveToStorage(STORAGE_KEYS.detailDrawerOpen, state.detailDrawerOpen)
+  }, [state.detailDrawerOpen, mounted])
+
+  useEffect(() => {
+    if (!mounted) return
+    saveToStorage(STORAGE_KEYS.chatOverlayOpen, state.chatOverlayOpen)
+  }, [state.chatOverlayOpen, mounted])
 
   useEffect(() => {
     if (!mounted) return
@@ -242,34 +271,39 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
     setState((prev) => ({ ...prev, explorerOpen: open }))
   }, [])
 
-  const toggleAssist = useCallback((panel?: AssistPanelType) => {
-    setState((prev) => {
-      // If same panel clicked, toggle off
-      if (panel && prev.activeAssistPanel === panel && prev.assistOpen) {
-        return { ...prev, assistOpen: false, activeAssistPanel: null }
-      }
-      // If different panel or was closed, open with new panel
-      return {
-        ...prev,
-        assistOpen: true,
-        activeAssistPanel: panel ?? prev.activeAssistPanel ?? "chat",
-      }
-    })
-  }, [])
-
-  const setAssistOpen = useCallback((open: boolean) => {
+  const toggleDetailDrawer = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      assistOpen: open,
-      activeAssistPanel: open ? (prev.activeAssistPanel ?? "chat") : null,
+      detailDrawerOpen: !prev.detailDrawerOpen,
     }))
   }, [])
 
-  const setActiveAssistPanel = useCallback((panel: AssistPanelType) => {
+  const setDetailDrawerOpen = useCallback((open: boolean) => {
     setState((prev) => ({
       ...prev,
-      activeAssistPanel: panel,
-      assistOpen: panel !== null,
+      detailDrawerOpen: open,
+    }))
+  }, [])
+
+  const setDetailDrawerContent = useCallback((content: DetailDrawerContent) => {
+    setState((prev) => ({
+      ...prev,
+      detailDrawerContent: content,
+      detailDrawerOpen: content !== null,
+    }))
+  }, [])
+
+  const toggleChatOverlay = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      chatOverlayOpen: !prev.chatOverlayOpen,
+    }))
+  }, [])
+
+  const setChatOverlayOpen = useCallback((open: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      chatOverlayOpen: open,
     }))
   }, [])
 
@@ -290,9 +324,11 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
     setNavbarCollapsed,
     toggleExplorer,
     setExplorerOpen,
-    toggleAssist,
-    setAssistOpen,
-    setActiveAssistPanel,
+    toggleDetailDrawer,
+    setDetailDrawerOpen,
+    setDetailDrawerContent,
+    toggleChatOverlay,
+    setChatOverlayOpen,
     updatePanelWidths,
     setNavbarTransitionEnabled,
   }

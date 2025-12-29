@@ -17,8 +17,9 @@ export { Breadcrumbs } from "./Breadcrumbs"
 
 // Floating Components (NEU - schwebende UI-Elemente)
 export { FloatingBreadcrumbs } from "./FloatingBreadcrumbs"
-export { FloatingAssistActions } from "./FloatingAssistActions"
 export { FloatingPagination, FloatingNavigation } from "./FloatingPagination"
+export { FloatingChatButton } from "./FloatingChatButton"
+export { ChatOverlay } from "./ChatOverlay"
 
 // Panel Components
 export {
@@ -27,8 +28,9 @@ export {
   ExplorerOutline,
   type ExplorerVariant,
 } from "./ExplorerPanel"
-export { AssistPanel } from "./AssistPanel"
+export { DetailDrawer } from "./DetailDrawer"
 export { AIChatPanel } from "./AIChatPanel"
+export { UserAvatar } from "./UserAvatar"
 
 // Page Components
 export { PageContent, LegacyPageContent } from "./PageContent"
@@ -42,8 +44,8 @@ export {
   ShellProvider,
   useShell,
   useExplorer,
-  useAssist,
+  useDetailDrawer,
+  useChatOverlay,
   type ShellState,
   type ShellContextValue,
-  type AssistPanelType,
 } from "./shell-context"

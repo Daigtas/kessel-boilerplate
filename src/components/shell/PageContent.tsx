@@ -4,10 +4,8 @@ import { type ReactNode } from "react"
 import { MainScrollArea } from "@/components/ui/scroll-area"
 
 import { FloatingBreadcrumbs } from "./FloatingBreadcrumbs"
-import { FloatingAssistActions } from "./FloatingAssistActions"
 import { FloatingPagination, FloatingNavigation } from "./FloatingPagination"
 import { PageHeader } from "./PageHeader"
-import { type AssistPanelType } from "./shell-context"
 
 /**
  * PageContent Props
@@ -27,12 +25,6 @@ interface PageContentProps {
 
   /** Breadcrumbs anzeigen */
   showBreadcrumbs?: boolean
-  /** Assist-Actions anzeigen */
-  showAssistActions?: boolean
-  /** Nur bestimmte Assist-Actions anzeigen */
-  assistActionsOnly?: AssistPanelType[]
-  /** Bestimmte Assist-Actions ausblenden */
-  assistActionsHide?: AssistPanelType[]
 
   // === Footer-Bereich (unten) ===
 
@@ -81,7 +73,6 @@ interface PageContentProps {
  *
  * Layout-Konzept:
  * - Oben links: FloatingBreadcrumbs (Pill)
- * - Oben rechts: FloatingAssistActions (runde Buttons)
  * - Unten: FloatingPagination oder FloatingNavigation (Pill)
  * - Content: Scrollt darunter durch
  *
@@ -122,9 +113,6 @@ export function PageContent({
   title,
   description,
   showBreadcrumbs = true,
-  showAssistActions = true,
-  assistActionsOnly,
-  assistActionsHide,
   pagination,
   navigation,
   floatingFooterLeft,
@@ -152,7 +140,7 @@ export function PageContent({
   }
 
   // Top-Padding für schwebende Elemente (erhöht, um Kollisionen zu vermeiden)
-  const topPadding = showBreadcrumbs || showAssistActions ? "pt-24" : ""
+  const topPadding = showBreadcrumbs ? "pt-24" : ""
   // Bottom-Padding für schwebende Elemente
   const bottomPadding =
     pagination || navigation || floatingFooterLeft || floatingFooterRight ? "pb-16" : ""
@@ -161,9 +149,6 @@ export function PageContent({
     <div className="relative flex h-full flex-col">
       {/* Schwebende Elemente - Oben */}
       {showBreadcrumbs && <FloatingBreadcrumbs />}
-      {showAssistActions && (
-        <FloatingAssistActions showOnly={assistActionsOnly} hide={assistActionsHide} />
-      )}
 
       {/* Scrollbarer Content */}
       <MainScrollArea className="flex-1">

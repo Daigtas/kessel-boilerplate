@@ -102,15 +102,6 @@
       "requiredRole": "user"
     },
     {
-      "id": "nav-about-cocoding",
-      "description": "Öffnet die Co-Coding Request Seite",
-      "action": "navigate",
-      "target": "/about/co-coding",
-      "category": "navigation",
-      "keywords": ["co-coding", "coding", "entwicklung", "development", "request"],
-      "requiredRole": "user"
-    },
-    {
       "id": "nav-about-bugs",
       "description": "Öffnet die Bug-Report Seite",
       "action": "navigate",
@@ -121,7 +112,7 @@
     },
     {
       "id": "nav-about-impressum",
-      "description": "Öffnet die Impressum / Kontakt Seite",
+      "description": "Öffnet die Impressum Seite",
       "action": "navigate",
       "target": "/about/impressum",
       "category": "navigation",
@@ -176,42 +167,6 @@
       "requiredRole": "admin"
     },
     {
-      "id": "nav-lt-dashboard",
-      "description": "Öffnet das Dashboard Layout Template",
-      "action": "navigate",
-      "target": "/account/layout-templates/dashboard",
-      "category": "navigation",
-      "keywords": ["dashboard", "layout", "template", "vorlage"],
-      "requiredRole": "admin"
-    },
-    {
-      "id": "nav-lt-table",
-      "description": "Öffnet das Tabelle / Data Layout Template",
-      "action": "navigate",
-      "target": "/account/layout-templates/table-data",
-      "category": "navigation",
-      "keywords": ["tabelle", "table", "data", "daten", "layout", "template"],
-      "requiredRole": "admin"
-    },
-    {
-      "id": "nav-lt-filebrowser",
-      "description": "Öffnet das File-Browser Layout Template",
-      "action": "navigate",
-      "target": "/account/layout-templates/file-browser",
-      "category": "navigation",
-      "keywords": ["file-browser", "datei-browser", "files", "dateien", "browser"],
-      "requiredRole": "admin"
-    },
-    {
-      "id": "nav-lt-blog",
-      "description": "Öffnet das Blog Layout Template",
-      "action": "navigate",
-      "target": "/account/layout-templates/blog",
-      "category": "navigation",
-      "keywords": ["blog", "artikel", "posts", "layout", "template"],
-      "requiredRole": "admin"
-    },
-    {
       "id": "nav-account-app-status",
       "description": "Öffnet die App-Status Seite",
       "action": "navigate",
@@ -221,31 +176,110 @@
       "requiredRole": "admin"
     },
     {
-      "id": "nav-account-users",
-      "description": "Öffnet die Benutzer-Verwaltung",
+      "id": "nav-admin-dashboard",
+      "description": "Öffnet das App-Dashboard mit Übersicht über Benutzer, Rollen, GitHub Repo Info, Vercel autodeploy, App Version, Connected Db's AI Accessibility",
       "action": "navigate",
-      "target": "/account/users",
+      "target": "/admin/dashboard",
       "category": "navigation",
-      "keywords": ["users", "benutzer", "nutzer", "user-verwaltung", "user-management"],
-      "requiredRole": "admin"
+      "keywords": ["dashboard", "app-dashboard", "übersicht", "admin", "app-status"],
+      "requiredRole": "admin",
+      "route": "global"
     },
     {
-      "id": "nav-account-roles",
+      "id": "nav-admin-datasources",
+      "description": "Öffnet die Datenquellen Verwaltung",
+      "action": "navigate",
+      "target": "/admin/ai-datasources",
+      "category": "navigation",
+      "keywords": ["datenquellen", "datasources", "ai", "ki", "ai-datasources"],
+      "requiredRole": "admin",
+      "route": "global"
+    },
+    {
+      "id": "nav-admin-roles",
       "description": "Öffnet die Rollen-Verwaltung",
       "action": "navigate",
       "target": "/account/roles",
       "category": "navigation",
       "keywords": ["rollen", "roles", "berechtigungen", "permissions", "rechte"],
-      "requiredRole": "admin"
+      "requiredRole": "admin",
+      "route": "global"
     },
     {
-      "id": "nav-admin-ai-datasources",
-      "description": "Öffnet die AI Datasources Verwaltung",
+      "id": "nav-admin-users",
+      "description": "Öffnet die Benutzer-Verwaltung",
       "action": "navigate",
-      "target": "/admin/ai-datasources",
+      "target": "/account/users",
       "category": "navigation",
-      "keywords": ["ai-datasources", "datasources", "ai", "ki", "datenquellen"],
-      "requiredRole": "admin"
+      "keywords": ["benutzer", "users", "nutzer", "user-verwaltung", "user-management"],
+      "requiredRole": "admin",
+      "route": "global"
+    },
+    {
+      "id": "nav-admin-chat-logs",
+      "description": "Öffnet die KI-Chat-Logs",
+      "action": "navigate",
+      "target": "/admin/chat-logs",
+      "category": "navigation",
+      "keywords": ["chat-logs", "ki-chat-logs", "logs", "protokoll", "chat-history"],
+      "requiredRole": "admin",
+      "route": "global"
+    },
+    {
+      "id": "nav-admin-theme-manager",
+      "description": "Öffnet das Theme Management",
+      "action": "navigate",
+      "target": "/account/design-system/theme-management",
+      "category": "navigation",
+      "keywords": [
+        "theme-manager",
+        "theme",
+        "thema",
+        "design",
+        "farben",
+        "colors",
+        "theme-management"
+      ],
+      "requiredRole": "admin",
+      "route": "global"
+    },
+    {
+      "id": "nav-admin-design-settings",
+      "description": "Öffnet die Design System Settings",
+      "action": "navigate",
+      "target": "/account/design-system/tweak",
+      "category": "navigation",
+      "keywords": [
+        "design-system-settings",
+        "design-settings",
+        "tweak",
+        "ui",
+        "anpassen",
+        "design",
+        "tokens"
+      ],
+      "requiredRole": "admin",
+      "route": "global"
+    },
+    {
+      "id": "nav-admin-components",
+      "description": "Öffnet die UI-Komponenten Verwaltung",
+      "action": "navigate",
+      "target": "/account/design-system/components",
+      "category": "navigation",
+      "keywords": ["ui-komponenten", "komponenten", "components", "ui", "interface"],
+      "requiredRole": "admin",
+      "route": "global"
+    },
+    {
+      "id": "nav-account-language",
+      "description": "Öffnet die Spracheinstellungen",
+      "action": "navigate",
+      "target": "/account/language",
+      "category": "navigation",
+      "keywords": ["sprache", "language", "spracheinstellungen", "locale", "localization"],
+      "requiredRole": "user",
+      "route": "global"
     },
     {
       "id": "nav-account-logout",
@@ -286,43 +320,43 @@
       "route": "global"
     },
     {
-      "id": "toggle-assist-chat",
-      "description": "Öffnet oder schließt das KI-Chat-Panel",
+      "id": "toggle-chat-overlay",
+      "description": "Öffnet oder schließt das KI-Chat-Overlay",
       "action": "toggle",
-      "target": "assist-chat",
+      "target": "chat-overlay",
       "category": "layout",
-      "keywords": ["chat", "ki", "ai", "assistent", "hilfe", "help", "assist", "panel"],
+      "keywords": [
+        "chat",
+        "ki",
+        "ai",
+        "assistent",
+        "hilfe",
+        "help",
+        "overlay",
+        "chat-overlay",
+        "floating-chat"
+      ],
       "requiredRole": "user",
       "route": "global"
     },
     {
-      "id": "toggle-assist-wiki",
-      "description": "Öffnet oder schließt das Wiki-Panel",
+      "id": "floating-chat-button",
+      "description": "Öffnet oder schließt den KI-Chat über den Floating Action Button",
       "action": "toggle",
-      "target": "assist-wiki",
+      "target": "chat-overlay",
       "category": "layout",
-      "keywords": ["wiki", "dokumentation", "documentation", "hilfe", "help", "panel"],
-      "requiredRole": "public",
-      "route": "global"
-    },
-    {
-      "id": "toggle-assist-comments",
-      "description": "Öffnet oder schließt das Kommentare-Panel",
-      "action": "toggle",
-      "target": "assist-comments",
-      "category": "layout",
-      "keywords": ["comments", "kommentare", "panel"],
-      "requiredRole": "public",
-      "route": "global"
-    },
-    {
-      "id": "toggle-assist-cart",
-      "description": "Öffnet oder schließt das Warenkorb-Panel",
-      "action": "toggle",
-      "target": "assist-cart",
-      "category": "layout",
-      "keywords": ["cart", "warenkorb", "shopping", "panel"],
-      "requiredRole": "public",
+      "keywords": [
+        "chat",
+        "ki",
+        "ai",
+        "assistent",
+        "hilfe",
+        "help",
+        "fab",
+        "floating-button",
+        "chat-button"
+      ],
+      "requiredRole": "user",
       "route": "global"
     },
     {
@@ -348,14 +382,46 @@
       "route": "/account/design-system/theme-management"
     },
     {
-      "id": "assist-panel-tabs",
-      "description": "Wechselt zwischen den Assist-Panel Tabs (Chat, Wiki, Kommentare, Warenkorb)",
+      "id": "user-avatar",
+      "description": "Öffnet das Benutzer-Menü mit Profil, Warenkorb, Sprache und Abmelden",
       "action": "toggle",
-      "target": "assist-panel",
-      "category": "layout",
-      "keywords": ["tabs", "assist", "chat", "wiki", "kommentare", "warenkorb", "panel"],
-      "requiredRole": "public",
+      "target": "user-menu",
+      "category": "navigation",
+      "keywords": ["user", "account", "profil", "avatar", "benutzer", "menü", "menu"],
+      "requiredRole": "user",
       "route": "global"
+    },
+    {
+      "id": "avatar-randomize",
+      "description": "Generiert ein neues zufälliges Avatar-Bild für den Benutzer. Hinweis: Befindet sich auf der Profil-Seite.",
+      "action": "trigger",
+      "target": "randomize-avatar",
+      "category": "settings",
+      "keywords": [
+        "avatar",
+        "profilbild",
+        "bild",
+        "zufällig",
+        "random",
+        "neu",
+        "new",
+        "ändern",
+        "change",
+        "neues avatar",
+        "neues bild"
+      ],
+      "requiredRole": "user",
+      "route": "/account/profile"
+    },
+    {
+      "id": "avatar-save",
+      "description": "Speichert das aktuell angezeigte Avatar-Bild. Hinweis: Befindet sich auf der Profil-Seite.",
+      "action": "trigger",
+      "target": "save-avatar",
+      "category": "settings",
+      "keywords": ["avatar", "speichern", "save", "profilbild", "bild"],
+      "requiredRole": "user",
+      "route": "/account/profile"
     }
   ]
 }

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { PageContent, PageHeader } from "@/components/shell"
-import { useExplorer, useShell } from "@/components/shell"
+import { useExplorer, useDetailDrawer } from "@/components/shell"
+import { ThemeDetailPanel } from "@/components/theme/ThemeDetailPanel"
 import { useTheme as useColorMode } from "next-themes"
 import Color from "color"
 import { Slider } from "@/components/ui/slider"
@@ -234,14 +235,16 @@ export default function TweakPage(): React.ReactElement {
   const { theme: currentThemeId } = useTheme()
   const { theme: colorMode, resolvedTheme } = useColorMode()
   const { setOpen: setExplorerOpen } = useExplorer()
-  const { setAssistOpen, assistOpen } = useShell()
+  const { setContent } = useDetailDrawer()
 
-  // Assist-Panel automatisch öffnen wenn auf Tweak-Seite
+  // Detail-Drawer mit ThemeDetailPanel öffnen wenn auf Tweak-Seite
   useEffect(() => {
-    if (!assistOpen) {
-      setAssistOpen(true)
+    setContent(<ThemeDetailPanel />)
+    return () => {
+      // Cleanup: Detail-Drawer schließen beim Verlassen der Seite
+      setContent(null)
     }
-  }, [assistOpen, setAssistOpen])
+  }, [setContent])
   const { previewToken, getCurrentTokens } = useThemeEditor()
 
   const isDarkMode = colorMode === "dark" || (colorMode === "system" && resolvedTheme === "dark")

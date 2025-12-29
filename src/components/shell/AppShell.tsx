@@ -5,6 +5,10 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { type ImperativePanelHandle } from "react-resizable-panels"
 import { cn } from "@/lib/utils"
 import { ShellProvider, useShell, DEFAULT_PANEL_WIDTHS, PANEL_CONSTRAINTS } from "./shell-context"
+import { DetailDrawer } from "./DetailDrawer"
+import { ChatOverlay } from "./ChatOverlay"
+import { FloatingChatButton } from "./FloatingChatButton"
+import { UserAvatar } from "./UserAvatar"
 
 /**
  * Konvertiert Pixel zu Prozent basierend auf Container-Breite
@@ -30,8 +34,6 @@ interface AppShellProps {
   navbar?: ReactNode
   /** Explorer Content (Spalte 2) */
   explorer?: ReactNode
-  /** Assist Content (Spalte 4) */
-  assist?: ReactNode
   /** CSS Klassen für das Root-Element */
   className?: string
 }
@@ -39,19 +41,13 @@ interface AppShellProps {
 /**
  * Innere Shell-Komponente (benötigt ShellProvider)
  */
-function ShellInner({
-  children,
-  navbar,
-  explorer,
-  assist,
-  className,
-}: AppShellProps): React.ReactElement {
+function ShellInner({ children, navbar, explorer, className }: AppShellProps): React.ReactElement {
   const {
     navbarCollapsed,
     setNavbarCollapsed,
     explorerOpen,
-    assistOpen,
-    setAssistOpen,
+    detailDrawerOpen,
+    detailDrawerContent,
     panelWidths,
     updatePanelWidths,
     navbarTransitionEnabled,
@@ -66,6 +62,9 @@ function ShellInner({
 
   // Explorer wird angezeigt wenn: Prop vorhanden UND State offen
   const hasExplorer = !!explorer && explorerOpen
+
+  // Detail-Drawer wird angezeigt wenn: Content vorhanden UND State offen
+  const hasDetailDrawer = detailDrawerContent !== null && detailDrawerOpen
 
   // Ref für imperative Panel-Kontrolle
   const navbarPanelRef = useRef<ImperativePanelHandle>(null)
@@ -124,7 +123,7 @@ function ShellInner({
       const explorerPercent = hasExplorer ? sizes[idx++] : 0
       // main wird nicht gespeichert - ist immer der Rest
       idx++ // skip main
-      const assistPercent = assistOpen ? sizes[idx++] : 0
+      const detailDrawerPercent = hasDetailDrawer ? sizes[idx++] : 0
 
       // Nur speichern wenn nicht collapsed (collapsed hat feste Breite)
       const newWidths: Partial<typeof panelWidths> = {}
@@ -135,15 +134,15 @@ function ShellInner({
       if (hasExplorer && explorerPercent > 0) {
         newWidths.explorer = Math.round(percentToPx(explorerPercent, containerWidth))
       }
-      if (assistOpen && assistPercent > 0) {
-        newWidths.assist = Math.round(percentToPx(assistPercent, containerWidth))
+      if (hasDetailDrawer && detailDrawerPercent > 0) {
+        newWidths.assist = Math.round(percentToPx(detailDrawerPercent, containerWidth))
       }
 
       if (Object.keys(newWidths).length > 0) {
         updatePanelWidths(newWidths)
       }
     },
-    [containerWidth, hasExplorer, assistOpen, navbarCollapsed, updatePanelWidths]
+    [containerWidth, hasExplorer, hasDetailDrawer, navbarCollapsed, updatePanelWidths]
   )
 
   // SSR-sichere Default-Prozente (für konsistente Hydration)
@@ -188,11 +187,11 @@ function ShellInner({
   const getMainPercent = useCallback(() => {
     const navbar = getNavbarPercent()
     const explorer = hasExplorer ? getExplorerPercent() : 0
-    const assist = assistOpen ? getAssistPercent() : 0
-    const main = 100 - navbar - explorer - assist
+    const detailDrawer = hasDetailDrawer ? getAssistPercent() : 0
+    const main = 100 - navbar - explorer - detailDrawer
     // Mindestens 20% für Main
     return Math.max(20, main)
-  }, [getNavbarPercent, getExplorerPercent, getAssistPercent, hasExplorer, assistOpen])
+  }, [getNavbarPercent, getExplorerPercent, getAssistPercent, hasExplorer, hasDetailDrawer])
 
   // Min/Max in Prozent umrechnen (SSR-sicher)
   const getNavbarMinPercent = () =>
@@ -272,10 +271,12 @@ function ShellInner({
     }
   }, [navbarCollapsed, containerWidth, setNavbarCollapsed, setNavbarTransitionEnabled])
 
-  // Doppelklick auf Assist-Handle: Panel komplett ausblenden
-  const handleAssistHandleDoubleClick = useCallback(() => {
-    setAssistOpen(false)
-  }, [setAssistOpen])
+  // Doppelklick auf Detail-Drawer-Handle: Panel komplett ausblenden
+  const handleDetailDrawerHandleDoubleClick = useCallback(() => {
+    // Detail-Drawer wird durch setContent(null) geschlossen
+    // Hier können wir nichts tun, da setContent nicht im Context verfügbar ist
+    // Die Seite muss das selbst handhaben
+  }, [])
 
   return (
     <div
@@ -283,7 +284,6 @@ function ShellInner({
       className={cn(
         "bg-background h-screen w-screen overflow-hidden",
         // Transition nur aktivieren wenn explizit gewünscht (Navbar Collapse/Expand)
-        // NICHT bei Assist-Panel Toggle!
         navbarTransitionEnabled && "enable-panel-transition",
         className
       )}
@@ -297,7 +297,7 @@ function ShellInner({
       >
         {/* Spalte 1: Navbar
             Pixel-basierte Breite, wird in Prozent umgerechnet
-            Transition nur bei explizitem Collapse/Expand, nicht bei AssistPanel-Toggle
+            Transition nur bei explizitem Collapse/Expand
         */}
         <ResizablePanel
           ref={navbarPanelRef}
@@ -357,35 +357,43 @@ function ShellInner({
           minSize={20}
           className="bg-background"
         >
-          <div className="relative flex h-full flex-col overflow-hidden">{children}</div>
+          <div className="relative flex h-full flex-col overflow-hidden">
+            {/* Floating UserAvatar oben rechts */}
+            <div className="absolute top-4 right-4 z-20">
+              <UserAvatar />
+            </div>
+            {children}
+          </div>
         </ResizablePanel>
 
-        {/* Spalte 4: Assist (optional)
+        {/* Spalte 4: Detail-Drawer (optional)
             Pixel-basierte Breite
+            Wird nur angezeigt wenn Content vorhanden ist
         */}
-        {assistOpen && (
+        {hasDetailDrawer && (
           <>
-            <ResizableHandle id="assist-handle" onDoubleClick={handleAssistHandleDoubleClick} />
+            <ResizableHandle
+              id="detail-drawer-handle"
+              onDoubleClick={handleDetailDrawerHandleDoubleClick}
+            />
 
             <ResizablePanel
-              id="assist"
+              id="detail-drawer"
               order={4}
               defaultSize={getAssistPercent()}
               minSize={getAssistMinPercent()}
               maxSize={getAssistMaxPercent()}
               className="bg-muted"
             >
-              <div className="flex h-full flex-col">
-                {assist ?? (
-                  <div className="text-muted-foreground flex h-full items-center justify-center">
-                    Assist
-                  </div>
-                )}
-              </div>
+              <DetailDrawer />
             </ResizablePanel>
           </>
         )}
       </ResizablePanelGroup>
+
+      {/* Chat Overlay & FAB */}
+      <ChatOverlay />
+      <FloatingChatButton />
     </div>
   )
 }
@@ -396,8 +404,8 @@ function ShellInner({
  * 4-Spalten-Layout basierend auf react-resizable-panels:
  * - Spalte 1: Navbar (User kann togglen/resizen)
  * - Spalte 2: Explorer (Entwickler steuert Sichtbarkeit, User kann resizen)
- * - Spalte 3: Main Area (flex-grow)
- * - Spalte 4: Assist (User kann togglen/resizen)
+ * - Spalte 3: Main Area (flex-grow) mit ChatOverlay und FloatingChatButton
+ * - Spalte 4: Detail-Drawer (optional, wird von Seiten gesetzt)
  *
  * @example
  * ```tsx
@@ -405,13 +413,12 @@ function ShellInner({
  * <AppShell
  *   navbar={<Navbar />}
  *   explorer={<ExplorerPanel />}
- *   assist={<AssistPanel />}
  * >
  *   <MainContent />
  * </AppShell>
  *
  * // Ohne Explorer
- * <AppShell navbar={<Navbar />} assist={<AssistPanel />}>
+ * <AppShell navbar={<Navbar />}>
  *   <MainContent />
  * </AppShell>
  * ```

@@ -1,29 +1,16 @@
 "use client"
 
 import { type ReactNode } from "react"
-import { PanelLeft, MessageSquare, BookOpen, MessageCircle, ShoppingCart } from "lucide-react"
+import { PanelLeft } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { useShell, useAssist, type AssistPanelType } from "./shell-context"
+import { useShell } from "./shell-context"
 import { Breadcrumbs } from "./Breadcrumbs"
+import { UserAvatar } from "./UserAvatar"
 import { AIInteractable } from "@/components/ai/AIInteractable"
-
-/**
- * Assist Panel Button Konfiguration
- */
-const assistButtons: {
-  type: AssistPanelType
-  icon: typeof MessageSquare
-  label: string
-}[] = [
-  { type: "chat", icon: MessageSquare, label: "AI-Chat" },
-  { type: "wiki", icon: BookOpen, label: "Wiki" },
-  { type: "comments", icon: MessageCircle, label: "Kommentare" },
-  { type: "cart", icon: ShoppingCart, label: "Warenkorb" },
-]
 
 /**
  * MainHeader Props
@@ -37,8 +24,6 @@ interface MainHeaderProps {
   rightContent?: ReactNode
   /** Breadcrumbs verstecken */
   hideBreadcrumbs?: boolean
-  /** Assist-Buttons verstecken */
-  hideAssistButtons?: boolean
 }
 
 /**
@@ -46,7 +31,7 @@ interface MainHeaderProps {
  *
  * Floating Header für die Main Area (Spalte 3).
  * - Links: Breadcrumbs (automatisch aus Route)
- * - Rechts: Toggle-Buttons für Assist-Panels (Spalte 4)
+ * - Rechts: User Avatar (Dropdown-Menü)
  *
  * Position: Fixed, schwebt über scrollbarem Content.
  */
@@ -55,10 +40,8 @@ export function MainHeader({
   leftContent,
   rightContent,
   hideBreadcrumbs = false,
-  hideAssistButtons = false,
 }: MainHeaderProps): React.ReactElement {
   const { navbarCollapsed, toggleNavbar } = useShell()
-  const { isOpen: assistOpen, activePanel, toggle: toggleAssist } = useAssist()
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -107,49 +90,13 @@ export function MainHeader({
           {leftContent}
         </div>
 
-        {/* Right Section: Custom Content + Assist Buttons */}
+        {/* Right Section: Custom Content + User Avatar */}
         <div className="flex items-center gap-2">
           {/* Additional Right Content */}
           {rightContent}
 
-          {/* Assist Panel Buttons */}
-          {!hideAssistButtons && (
-            <div className="flex items-center gap-1">
-              {assistButtons.map(({ type, icon: Icon, label }) => {
-                const keywords: string[] =
-                  type === "chat"
-                    ? ["chat", "ki", "ai", "assistent", "hilfe", "help", "assist", "panel"]
-                    : type === "wiki"
-                      ? ["wiki", "dokumentation", "documentation", "hilfe", "help", "panel"]
-                      : [type, label.toLowerCase()].filter((k): k is string => k !== null)
-
-                return (
-                  <Tooltip key={type}>
-                    <TooltipTrigger asChild>
-                      <AIInteractable
-                        id={`toggle-assist-${type}`}
-                        action="toggle"
-                        target={`assist-${type}`}
-                        description={`Öffnet oder schließt das ${label}-Panel`}
-                        keywords={keywords}
-                        category="layout"
-                      >
-                        <Button
-                          variant={assistOpen && activePanel === type ? "secondary" : "ghost"}
-                          size="icon"
-                          onClick={() => toggleAssist(type)}
-                          className="size-8"
-                        >
-                          <Icon className="size-4" />
-                        </Button>
-                      </AIInteractable>
-                    </TooltipTrigger>
-                    <TooltipContent>{label}</TooltipContent>
-                  </Tooltip>
-                )
-              })}
-            </div>
-          )}
+          {/* User Avatar */}
+          <UserAvatar />
         </div>
       </header>
     </TooltipProvider>

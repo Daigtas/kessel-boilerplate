@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
 import { createClient } from "@/utils/supabase/client"
-import { navigationConfig, type NavItem, type NavSection } from "@/config/navigation"
+import { allNavigationConfig, type NavItem, type NavSection } from "@/config/navigation"
 import type { UserRole } from "./auth-context"
 import { useAuth } from "./auth-context"
 
@@ -71,7 +71,7 @@ function generateFallbackPermissions(): Map<string, ModulePermission> {
     }
   }
 
-  navigationConfig.forEach(processItem)
+  allNavigationConfig.forEach(processItem)
   return perms
 }
 
@@ -166,12 +166,35 @@ export function PermissionsProvider({ children }: { children: ReactNode }): Reac
   }, [loadPermissions, user?.id, isAuthenticated])
 
   /**
+   * Prüft ob ein Modul 'alwaysVisible' ist (kann nicht über Rollen deaktiviert werden)
+   */
+  const isAlwaysVisible = useCallback((moduleId: string): boolean => {
+    // Durchsuche alle Sections und Items nach dem Modul
+    for (const section of allNavigationConfig) {
+      for (const item of section.items) {
+        if (item.id === moduleId && item.alwaysVisible) {
+          return true
+        }
+        // Prüfe auch Children
+        if (item.children) {
+          for (const child of item.children) {
+            if (child.id === moduleId && child.alwaysVisible) {
+              return true
+            }
+          }
+        }
+      }
+    }
+    return false
+  }, [])
+
+  /**
    * Prüft ob ein Modul für eine Rolle sichtbar ist.
    *
    * Spezialfälle:
    * - Admin: Hat IMMER Zugriff auf alles (Sicherheitsnetz)
    * - NoUser: Navigation ist nicht sichtbar (werden zu Login redirected) → immer false
-   * - Logout ist IMMER für eingeloggte User erlaubt
+   * - alwaysVisible: Immer sichtbar für alle eingeloggten User (z.B. Impressum, Logout, Profil)
    * - Unbekannte Module: Fallback auf statische Config
    */
   const canAccess = useCallback(
@@ -187,8 +210,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }): Reac
         return false
       }
 
-      // Spezialfall: Logout ist IMMER für eingeloggte User erlaubt
-      if (moduleId === "account-logout") {
+      // Spezialfall: alwaysVisible Items sind IMMER für eingeloggte User sichtbar
+      if (isAlwaysVisible(moduleId)) {
         return true
       }
 
@@ -220,7 +243,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }): Reac
 
       return hasAccess
     },
-    [permissions]
+    [permissions, isAlwaysVisible]
   )
 
   return (

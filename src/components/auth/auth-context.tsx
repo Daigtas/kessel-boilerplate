@@ -14,6 +14,7 @@ export interface User {
   email: string
   name: string
   avatar?: string
+  avatarSeed?: string // Seed für DiceBear Avatar-Generierung
   role: UserRole
   roleId?: string // UUID der Rolle aus roles Tabelle
   createdAt?: string // ISO timestamp string
@@ -52,7 +53,8 @@ async function loadUserProfile(supabaseUser: SupabaseUser): Promise<User> {
       id, 
       email, 
       display_name, 
-      avatar_url, 
+      avatar_url,
+      avatar_seed,
       created_at,
       role,
       role_id,
@@ -114,6 +116,7 @@ async function loadUserProfile(supabaseUser: SupabaseUser): Promise<User> {
     email: profile?.email || supabaseUser.email || "",
     name: profile?.display_name || supabaseUser.email?.split("@")[0] || "User",
     avatar: profile?.avatar_url || undefined,
+    avatarSeed: profile?.avatar_seed || undefined,
     role: roleName as UserRole,
     roleId: roleId,
     createdAt: profile?.created_at || undefined,

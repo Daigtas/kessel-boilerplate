@@ -18,7 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
-import { navigationConfig } from "@/config/navigation"
+import { allNavigationConfig } from "@/config/navigation"
 import { RoleManagement, type Role } from "./_components/RoleManagement"
 
 // Berechtigungstyp
@@ -27,6 +27,7 @@ interface Permission {
   moduleName: string
   parentId?: string
   roleAccess: Map<string, boolean> // Map<roleName, hasAccess>
+  alwaysVisible?: boolean // Kann nicht über Rollen deaktiviert werden
 }
 
 /**
@@ -55,7 +56,7 @@ export default function RolesPage(): React.ReactElement {
   function initializePermissions(availableRoles: Role[]): Permission[] {
     const perms: Permission[] = []
 
-    navigationConfig.forEach((section) => {
+    allNavigationConfig.forEach((section) => {
       // Section-Level
       const sectionRoleAccess = new Map<string, boolean>()
       availableRoles.forEach((r) => {
@@ -97,6 +98,7 @@ export default function RolesPage(): React.ReactElement {
           moduleName: item.label,
           parentId: section.id,
           roleAccess: itemRoleAccess,
+          alwaysVisible: item.alwaysVisible,
         })
 
         // Children (Sub-Module)
@@ -117,6 +119,7 @@ export default function RolesPage(): React.ReactElement {
             moduleName: child.label,
             parentId: item.id,
             roleAccess: childRoleAccess,
+            alwaysVisible: child.alwaysVisible,
           })
         })
       })
@@ -452,7 +455,7 @@ export default function RolesPage(): React.ReactElement {
               const sectionModuleIds = new Set<string>([sectionId])
 
               // Finde alle direkten Items der Section
-              const section = navigationConfig.find((s) => s.id === sectionId)
+              const section = allNavigationConfig.find((s) => s.id === sectionId)
               if (section) {
                 section.items.forEach((item) => {
                   if (item.id !== "account-login") {
@@ -523,19 +526,21 @@ export default function RolesPage(): React.ReactElement {
                           <TableCell className={indent}>
                             {!isSection && <span className="text-muted-foreground mr-2">└</span>}
                             {perm.moduleName}
-                            {perm.moduleId === "account-logout" && (
+                            {perm.alwaysVisible && (
                               <Badge variant="outline" className="ml-2 text-xs">
-                                Immer erlaubt
+                                Immer sichtbar
                               </Badge>
                             )}
                           </TableCell>
                           {roles.map((r) => {
                             const isSaving = savingModuleId === perm.moduleId
                             const isAdmin = r.name === "admin"
-                            const isLogout = perm.moduleId === "account-logout"
-                            // Admin-Spalte und Logout sind IMMER gesperrt
-                            const isDisabled = isLogout || isAdmin || isSaving
+                            const isAlwaysVisible = perm.alwaysVisible === true
+                            // Admin-Spalte und alwaysVisible Items sind IMMER gesperrt
+                            const isDisabled = isAlwaysVisible || isAdmin || isSaving
                             const hasAccess = perm.roleAccess.get(r.name) ?? false
+                            // alwaysVisible Items sind immer aktiv (checked)
+                            const isChecked = isAdmin || isAlwaysVisible ? true : hasAccess
 
                             return (
                               <TableCell key={r.id} className="text-center">
@@ -543,12 +548,14 @@ export default function RolesPage(): React.ReactElement {
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className={isAdmin ? "opacity-40" : ""}>
+                                        <div
+                                          className={isAdmin || isAlwaysVisible ? "opacity-40" : ""}
+                                        >
                                           <Checkbox
-                                            checked={isAdmin ? true : hasAccess}
+                                            checked={isChecked}
                                             onCheckedChange={(checked) => {
-                                              // Admin-Spalte darf NIEMALS geändert werden
-                                              if (!isAdmin && !isLogout) {
+                                              // Admin-Spalte und alwaysVisible dürfen NIEMALS geändert werden
+                                              if (!isAdmin && !isAlwaysVisible) {
                                                 handlePermissionChange(
                                                   perm.moduleId,
                                                   r.name,
@@ -558,7 +565,7 @@ export default function RolesPage(): React.ReactElement {
                                             }}
                                             disabled={isDisabled}
                                             className={
-                                              isAdmin
+                                              isAdmin || isAlwaysVisible
                                                 ? "pointer-events-none cursor-not-allowed"
                                                 : ""
                                             }
@@ -568,6 +575,11 @@ export default function RolesPage(): React.ReactElement {
                                       {isAdmin && (
                                         <TooltipContent>
                                           <p>Admin hat immer Vollzugriff (nicht änderbar)</p>
+                                        </TooltipContent>
+                                      )}
+                                      {isAlwaysVisible && !isAdmin && (
+                                        <TooltipContent>
+                                          <p>Dieser Punkt ist immer sichtbar (nicht änderbar)</p>
                                         </TooltipContent>
                                       )}
                                     </Tooltip>
@@ -584,41 +596,30 @@ export default function RolesPage(): React.ReactElement {
               )
             }
 
-            const appContentPerms = getSectionPermissions("app-content")
-            const aboutPerms = getSectionPermissions("about")
-            const accountPerms = getSectionPermissions("account")
-
+            // Dynamisch alle Sections aus allNavigationConfig rendern
             return (
               <>
-                {/* Custom Modules Card */}
-                {appContentPerms.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Custom Modules</CardTitle>
-                    </CardHeader>
-                    <CardContent>{renderPermissionsTable(appContentPerms)}</CardContent>
-                  </Card>
-                )}
+                {allNavigationConfig.map((section) => {
+                  const sectionPerms = getSectionPermissions(section.id)
+                  if (sectionPerms.length === 0) return null
 
-                {/* About-Apps Section Card */}
-                {aboutPerms.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>About-Apps Section</CardTitle>
-                    </CardHeader>
-                    <CardContent>{renderPermissionsTable(aboutPerms)}</CardContent>
-                  </Card>
-                )}
+                  // Titel für die Card: section.title oder formatierter section.id
+                  const cardTitle =
+                    section.title ||
+                    section.id
+                      .split("-")
+                      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(" ")
 
-                {/* Account Section Card */}
-                {accountPerms.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Account Section</CardTitle>
-                    </CardHeader>
-                    <CardContent>{renderPermissionsTable(accountPerms)}</CardContent>
-                  </Card>
-                )}
+                  return (
+                    <Card key={section.id}>
+                      <CardHeader>
+                        <CardTitle>{cardTitle}</CardTitle>
+                      </CardHeader>
+                      <CardContent>{renderPermissionsTable(sectionPerms)}</CardContent>
+                    </Card>
+                  )
+                })}
               </>
             )
           })()}

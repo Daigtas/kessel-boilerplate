@@ -3,13 +3,16 @@
 import { useState, useEffect } from "react"
 import { useAuth } from "@/components/auth"
 import { PageContent } from "@/components/shell/PageContent"
-import { User, Mail, Lock } from "lucide-react"
+import { User, Mail, Lock, RefreshCw, Check } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { SaveableInput } from "@/components/ui/saveable-input"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { AIInteractable } from "@/components/ai/AIInteractable"
 
 /**
  * User Profile Seite
@@ -24,6 +27,12 @@ export default function ProfilePage(): React.ReactElement {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
 
+  // Avatar States
+  const [avatarSeed, setAvatarSeed] = useState<string>("")
+  const [previewSeed, setPreviewSeed] = useState<string>("")
+  const [savedAvatarSeed, setSavedAvatarSeed] = useState(false)
+  const [savingAvatar, setSavingAvatar] = useState(false)
+
   // UI States
   const [error, setError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
@@ -36,15 +45,68 @@ export default function ProfilePage(): React.ReactElement {
 
   // Track which field is currently being saved
   const [savingField, setSavingField] = useState<string | null>(null)
-  const [_isSaving, setIsSaving] = useState(false)
+  const [, setIsSaving] = useState(false)
 
   // Initialize form values from user data
   useEffect(() => {
     if (user) {
       setDisplayName(user.name)
       setEmail(user.email)
+      // Avatar Seed: Gespeicherter Seed oder Name als Fallback
+      const initialSeed = user.avatarSeed || user.name || user.email
+      setAvatarSeed(initialSeed)
+      setPreviewSeed(initialSeed)
     }
   }, [user])
+
+  // Avatar URL generieren
+  const getAvatarUrl = (seed: string) =>
+    `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`
+
+  // Zufälligen Seed generieren
+  const randomizeSeed = () => {
+    const randomSeed = Math.random().toString(36).substring(2, 15) + Date.now().toString(36)
+    setPreviewSeed(randomSeed)
+  }
+
+  // Avatar Seed speichern
+  async function handleSaveAvatar() {
+    if (!user) return
+
+    setSavingAvatar(true)
+    setError(null)
+    setSavedAvatarSeed(false)
+
+    try {
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_seed: previewSeed })
+        .eq("id", user.id)
+
+      if (updateError) {
+        throw updateError
+      }
+
+      setAvatarSeed(previewSeed)
+      await refreshUser()
+      setSavedAvatarSeed(true)
+
+      // Reset saved state after 3 seconds
+      setTimeout(() => setSavedAvatarSeed(false), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Fehler beim Speichern des Avatars")
+    } finally {
+      setSavingAvatar(false)
+    }
+  }
+
+  // Avatar zurücksetzen auf gespeicherten Wert
+  const resetAvatarPreview = () => {
+    setPreviewSeed(avatarSeed)
+  }
+
+  // Prüfen ob Preview sich vom gespeicherten Wert unterscheidet
+  const hasAvatarChanges = previewSeed !== avatarSeed
 
   if (isLoading) {
     return (
@@ -220,6 +282,102 @@ export default function ProfilePage(): React.ReactElement {
             {success}
           </div>
         )}
+
+        {/* Avatar Card - Oben */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="size-5" />
+              Profilbild
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center gap-6">
+              {/* Großer Avatar */}
+              <div className="relative">
+                <Avatar className="border-border size-32 border-4 shadow-lg">
+                  <AvatarImage src={getAvatarUrl(previewSeed)} alt={displayName} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
+                    {displayName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                {hasAvatarChanges && (
+                  <div className="bg-warning absolute -top-1 -right-1 size-4 animate-pulse rounded-full" />
+                )}
+              </div>
+
+              {/* Aktionen */}
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <AIInteractable
+                  id="avatar-randomize"
+                  action="trigger"
+                  target="randomize-avatar"
+                  description="Generiert ein neues zufälliges Avatar-Bild"
+                  keywords={["avatar", "profilbild", "zufällig", "random", "neu", "neues avatar"]}
+                  category="settings"
+                  onAction={randomizeSeed}
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={randomizeSeed}
+                    disabled={savingAvatar}
+                    className="gap-2"
+                  >
+                    <RefreshCw className="size-4" />
+                    Neuer Avatar
+                  </Button>
+                </AIInteractable>
+
+                {hasAvatarChanges && (
+                  <>
+                    <AIInteractable
+                      id="avatar-save"
+                      action="trigger"
+                      target="save-avatar"
+                      description="Speichert das aktuelle Avatar-Bild"
+                      keywords={["avatar", "speichern", "save", "profilbild"]}
+                      category="settings"
+                      onAction={handleSaveAvatar}
+                    >
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleSaveAvatar}
+                        disabled={savingAvatar}
+                        className="gap-2"
+                      >
+                        {savingAvatar ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : savedAvatarSeed ? (
+                          <Check className="size-4" />
+                        ) : null}
+                        Speichern
+                      </Button>
+                    </AIInteractable>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetAvatarPreview}
+                      disabled={savingAvatar}
+                    >
+                      Zurücksetzen
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              <p className="text-muted-foreground text-center text-xs">
+                Klicke auf &quot;Neuer Avatar&quot;, bis dir ein Bild gefällt, dann speichere es.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Personal Info Card */}
         <Card>

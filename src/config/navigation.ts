@@ -8,19 +8,16 @@ import {
   LogOut,
   BookOpen,
   Lightbulb,
-  Code,
   Bug,
   Mail,
   Palette,
-  Layout,
-  Table,
-  FolderTree,
   Activity,
   Paintbrush,
-  Type,
-  Shapes,
   Box,
   Database,
+  MessageSquare,
+  ShoppingCart,
+  Languages,
   type LucideIcon,
 } from "lucide-react"
 
@@ -42,6 +39,8 @@ export interface NavItem {
   requiredRoles?: string[]
   /** Ist ein Action-Button (z.B. Logout) */
   isAction?: boolean
+  /** Immer sichtbar - kann nicht über Rollen deaktiviert werden (z.B. Impressum, Logout) */
+  alwaysVisible?: boolean
 }
 
 /**
@@ -110,14 +109,14 @@ const appContentSection: NavSection = {
 }
 
 /**
- * About the App Navigation (Meta-Information)
+ * Über die App Navigation (Meta-Information)
  *
  * Oeffentliche Seiten: App-Wiki ist fuer alle sichtbar (NoUser, user, admin)
  * Andere About-Seiten erfordern Login (user, admin)
  */
 const aboutSection: NavSection = {
   id: "about",
-  title: "About the App", // Section Title - nicht klickbar
+  title: "ÜBER DIE APP", // Section Title - nicht klickbar
   items: [
     // Oeffentlich: App-Wiki fuer alle sichtbar
     {
@@ -136,13 +135,6 @@ const aboutSection: NavSection = {
       requiredRoles: ["user", "admin"],
     },
     {
-      id: "about-cocoding",
-      label: "Co-Coding Request",
-      icon: Code,
-      href: "/about/co-coding",
-      requiredRoles: ["user", "admin"],
-    },
-    {
       id: "about-bugs",
       label: "Bug-Report",
       icon: Bug,
@@ -151,131 +143,153 @@ const aboutSection: NavSection = {
     },
     {
       id: "about-impressum",
-      label: "Impressum / Kontakt",
+      label: "Impressum",
       icon: Mail,
       href: "/about/impressum",
       requiredRoles: ["NoUser", "user", "admin"], // Oeffentlich
+      alwaysVisible: true, // Rechtlich erforderlich - kann nicht deaktiviert werden
     },
   ],
 }
 
 /**
- * Account Navigation (User-bezogen)
+ * App-Verwaltung Navigation (Admin-only)
  *
- * Für alle sichtbar, damit Login-Button erreichbar ist
+ * Verwaltungsfunktionen für Administratoren
  */
-const accountSection: NavSection = {
-  id: "account",
-  title: "Account", // Section Title - nicht klickbar
-  // Keine requiredRoles = für alle sichtbar
+const adminSection: NavSection = {
+  id: "admin",
+  title: "APP-VERWALTUNG", // Section Title - nicht klickbar
+  requiredRoles: ["admin"], // Nur für Admin sichtbar
   items: [
     {
-      id: "account-profile",
-      label: "User Details",
-      icon: User,
-      href: "/account/profile",
-      requiredRoles: ["user", "admin"],
-    },
-    {
-      id: "account-design-system",
-      label: "Design System",
-      icon: Palette,
-      requiredRoles: ["admin"],
-      children: [
-        {
-          id: "ds-theme",
-          label: "Theme Management",
-          icon: Palette,
-          href: "/account/design-system/theme-management",
-        },
-        {
-          id: "ds-tweak",
-          label: "Tweak the UI",
-          icon: Paintbrush,
-          href: "/account/design-system/tweak",
-        },
-        {
-          id: "ds-components",
-          label: "Komponenten",
-          icon: Box,
-          href: "/account/design-system/components",
-        },
-      ],
-    },
-    {
-      id: "account-layout-templates",
-      label: "Layout Templates",
-      icon: Layout,
-      requiredRoles: ["admin"],
-      children: [
-        {
-          id: "lt-dashboard",
-          label: "Dashboard",
-          icon: Layout,
-          href: "/account/layout-templates/dashboard",
-        },
-        {
-          id: "lt-table",
-          label: "Tabelle / Data",
-          icon: Table,
-          href: "/account/layout-templates/table-data",
-        },
-        {
-          id: "lt-filebrowser",
-          label: "File-Browser",
-          icon: FolderTree,
-          href: "/account/layout-templates/file-browser",
-        },
-        {
-          id: "lt-blog",
-          label: "Blog",
-          icon: FileText,
-          href: "/account/layout-templates/blog",
-        },
-      ],
-    },
-    {
-      id: "account-app-status",
-      label: "App-Status",
+      id: "admin-dashboard",
+      label: "App-Dashboard",
       icon: Activity,
-      href: "/account/app-status",
+      href: "/admin/dashboard",
       requiredRoles: ["admin"],
     },
     {
-      id: "account-users",
-      label: "Users",
-      icon: Users,
-      href: "/account/users",
+      id: "admin-datasources",
+      label: "Datenquellen",
+      icon: Database,
+      href: "/admin/ai-datasources",
       requiredRoles: ["admin"],
     },
     {
-      id: "account-roles",
+      id: "admin-roles",
       label: "Rollen",
       icon: Shield,
       href: "/account/roles",
       requiredRoles: ["admin"],
     },
     {
-      id: "admin-ai-datasources",
-      label: "AI Datasources",
-      icon: Database,
-      href: "/admin/ai-datasources",
+      id: "admin-users",
+      label: "Benutzer",
+      icon: Users,
+      href: "/account/users",
       requiredRoles: ["admin"],
     },
     {
-      id: "account-logout",
-      label: "Log out",
-      icon: LogOut,
-      isAction: true,
-      requiredRoles: ["user", "admin"], // Nur sichtbar wenn eingeloggt
+      id: "admin-chat-logs",
+      label: "KI-Chat-Logs",
+      icon: MessageSquare,
+      href: "/admin/chat-logs",
+      requiredRoles: ["admin"],
+    },
+    {
+      id: "admin-theme-manager",
+      label: "Theme Manager",
+      icon: Palette,
+      href: "/account/design-system/theme-management",
+      requiredRoles: ["admin"],
+    },
+    {
+      id: "admin-design-settings",
+      label: "Design System Settings",
+      icon: Paintbrush,
+      href: "/account/design-system/tweak",
+      requiredRoles: ["admin"],
+    },
+    {
+      id: "admin-components",
+      label: "UI-Komponenten",
+      icon: Box,
+      href: "/account/design-system/components",
+      requiredRoles: ["admin"],
     },
   ],
 }
 
 /**
- * Vollständige Navigations-Konfiguration
+ * User-Menü Navigation (Avatar-Dropdown)
+ *
+ * Wird separat vom Hauptmenü verwendet, aber über dieselbe Rollen-Verwaltung gesteuert.
  */
-export const navigationConfig: NavSection[] = [appContentSection, aboutSection, accountSection]
+const userMenuSection: NavSection = {
+  id: "user-menu",
+  title: "BENUTZER-MENÜ",
+  items: [
+    {
+      id: "user-profile",
+      label: "Profil",
+      icon: User,
+      href: "/account/profile",
+      requiredRoles: ["user", "admin"], // Alle eingeloggten User
+      alwaysVisible: true, // Immer sichtbar - Grundfunktion
+    },
+    {
+      id: "user-cart",
+      label: "Warenkorb",
+      icon: ShoppingCart,
+      href: "/account/payment",
+      requiredRoles: ["user", "admin"], // Kann für bestimmte Rollen deaktiviert werden
+    },
+    {
+      id: "user-display-settings",
+      label: "Anzeige-Einstellungen",
+      icon: Palette,
+      href: "/account/design-system/theme-management",
+      requiredRoles: ["user", "admin"], // Alle können Theme wechseln
+    },
+    {
+      id: "user-language",
+      label: "Sprache",
+      icon: Languages,
+      href: "/account/language",
+      requiredRoles: ["user", "admin"], // Alle können Sprache wechseln
+    },
+    {
+      id: "user-logout",
+      label: "Abmelden",
+      icon: LogOut,
+      isAction: true,
+      requiredRoles: ["user", "admin"], // Immer erlaubt für eingeloggte User
+      alwaysVisible: true, // Immer sichtbar - User muss sich ausloggen können
+    },
+  ],
+}
+
+/**
+ * Vollständige Navigations-Konfiguration (Sidebar)
+ */
+export const navigationConfig: NavSection[] = [appContentSection, aboutSection, adminSection]
+
+/**
+ * User-Menü Konfiguration (Avatar-Dropdown)
+ */
+export const userMenuConfig: NavSection = userMenuSection
+
+/**
+ * Alle Konfigurationen für Rollen-Verwaltung
+ * Enthält sowohl Sidebar als auch User-Menü
+ */
+export const allNavigationConfig: NavSection[] = [
+  appContentSection,
+  aboutSection,
+  adminSection,
+  userMenuSection,
+]
 
 /**
  * App-Metadata

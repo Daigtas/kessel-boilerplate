@@ -1,22 +1,22 @@
 "use client"
 
 import { useEffect } from "react"
-import { useShell, useAssist } from "./shell-context"
+import { useShell, useChatOverlay } from "./shell-context"
 
 /**
  * Keyboard Shortcuts Komponente
  *
  * Registriert globale Keyboard Shortcuts für die Shell:
  * - Ctrl/Cmd + B: Navbar toggle
- * - Ctrl/Cmd + J: Assist toggle (Chat)
- * - Escape: Schließt Assist-Panel
+ * - Ctrl/Cmd + J: Chat Overlay toggle
+ * - Escape: Schließt Chat Overlay
  *
  * Hinweis: Explorer (Spalte 2) wird vom Entwickler gesteuert,
  * nicht vom User, daher kein Keyboard Shortcut.
  */
 export function KeyboardShortcuts(): null {
   const { toggleNavbar } = useShell()
-  const { toggle: toggleAssist, isOpen: assistOpen } = useAssist()
+  const { toggle: toggleChatOverlay, isOpen: chatOverlayOpen } = useChatOverlay()
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -34,21 +34,21 @@ export function KeyboardShortcuts(): null {
         toggleNavbar()
       }
 
-      // Ctrl/Cmd + J: Assist toggle
+      // Ctrl/Cmd + J: Chat Overlay toggle
       if (isMod && e.key === "j") {
         e.preventDefault()
-        toggleAssist("chat")
+        toggleChatOverlay()
       }
 
-      // Escape: Close Assist panel
-      if (e.key === "Escape" && assistOpen) {
-        toggleAssist()
+      // Escape: Close Chat Overlay
+      if (e.key === "Escape" && chatOverlayOpen) {
+        toggleChatOverlay()
       }
     }
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [toggleNavbar, toggleAssist, assistOpen])
+  }, [toggleNavbar, toggleChatOverlay, chatOverlayOpen])
 
   return null
 }

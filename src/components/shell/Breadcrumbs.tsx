@@ -14,20 +14,28 @@ import { cn } from "@/lib/utils"
  * Kann erweitert werden für projektspezifische Pfade.
  */
 const labelMappings: Record<string, string> = {
-  // About
-  about: "About the App",
+  // Über die App
+  about: "Über die App",
   wiki: "App-Wiki",
   features: "Feature-Wishlist",
-  "co-coding": "Co-Coding Request",
   bugs: "Bug-Report",
-  impressum: "Impressum / Kontakt",
+  impressum: "Impressum",
+  // App-Verwaltung (admin)
+  admin: "App-Verwaltung",
+  dashboard: "App-Dashboard",
+  "ai-datasources": "Datenquellen",
+  "chat-logs": "KI-Chat-Logs",
+  "theme-management": "Theme Manager",
+  tweak: "Design System Settings",
+  components: "UI-Komponenten",
   // Account
   account: "Account",
-  profile: "User Details",
-  theme: "Personalisierung",
-  payment: "Payment-Options",
-  users: "Users",
+  profile: "Profil",
+  language: "Sprache",
+  payment: "Warenkorb",
+  users: "Benutzer",
   roles: "Rollen",
+  "design-system": "Design System",
   // Content (Beispiel)
   content: "Content",
 }

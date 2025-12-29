@@ -348,5 +348,3 @@ flowchart TD
 ---
 
 ## Datei-Übersicht
-
-| Aktion | Datei ||--------|-------|| Bearbeiten | `src/config/navigation.ts` || Bearbeiten | `src/components/shell/Navbar.tsx` || Bearbeiten | `src/components/shell/MainHeader.tsx` || Bearbeiten | `src/components/shell/Breadcrumbs.tsx` || Bearbeiten | `src/components/shell/shell-context.tsx` || Bearbeiten | `src/components/shell/AppShell.tsx` || Bearbeiten | `src/components/shell/AIChatPanel.tsx` || Umbenennen | `AssistPanel.tsx` → `DetailDrawer.tsx` || Erstellen | `src/components/ui/avatar.tsx` (via shadcn) || Erstellen | `src/components/shell/UserAvatar.tsx` || Erstellen | `src/components/shell/FloatingChatButton.tsx` || Erstellen | `src/components/shell/ChatOverlay.tsx` || Erstellen | `src/app/(shell)/admin/dashboard/page.tsx` || Erstellen | `src/app/(shell)/admin/chat-logs/page.tsx` || Erstellen | `src/app/(shell)/account/language/page.tsx` || Löschen | `src/app/(shell)/about/co-coding/` |

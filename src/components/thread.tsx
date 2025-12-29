@@ -56,7 +56,7 @@ export const Thread: FC = () => {
       </ThreadPrimitive.Viewport>
 
       {/* Composer AUSSERHALB des Viewports - bleibt immer am unteren Rand */}
-      <div className="aui-thread-viewport-footer bg-muted relative mx-auto flex w-full max-w-(--thread-max-width) shrink-0 flex-col gap-4 rounded-t-xl px-4 pt-2 pb-4 md:pb-6">
+      <div className="aui-thread-viewport-footer relative mx-auto flex w-full max-w-(--thread-max-width) shrink-0 flex-col gap-4 px-4 pt-2 pb-4 md:pb-6">
         <ThreadScrollToBottom />
         <Composer />
       </div>
