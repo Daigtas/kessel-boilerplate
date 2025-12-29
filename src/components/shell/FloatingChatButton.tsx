@@ -43,18 +43,19 @@ export function FloatingChatButton(): React.ReactElement {
           onClick={toggle}
           size="icon"
           className={cn(
-            "size-14 rounded-full p-0 shadow-lg transition-all",
-            "hover:scale-110 hover:shadow-xl",
-            !isOpen && "bg-transparent hover:bg-transparent",
-            isOpen && "bg-destructive hover:bg-destructive/90"
+            "relative size-14 rounded-full bg-transparent p-0 shadow-lg transition-all",
+            "hover:scale-110 hover:bg-transparent hover:shadow-xl"
           )}
         >
-          {isOpen ? (
-            <X className="size-6 transition-transform" />
-          ) : (
-            <Avatar className="size-12">
-              <AvatarImage src={chatbotAvatarUrl} alt="Chatbot" />
-            </Avatar>
+          {/* Avatar ist immer sichtbar */}
+          <Avatar className="size-12">
+            <AvatarImage src={chatbotAvatarUrl} alt="Chatbot" />
+          </Avatar>
+          {/* X-Overlay wenn Chat offen */}
+          {isOpen && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+              <X className="text-destructive size-6" />
+            </div>
           )}
         </Button>
       </AIInteractable>
