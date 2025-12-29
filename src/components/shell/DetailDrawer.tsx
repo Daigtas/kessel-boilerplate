@@ -1,7 +1,6 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { useDetailDrawer } from "./shell-context"
 
 /**
@@ -18,6 +17,9 @@ interface DetailDrawerProps {
  * Spalte 4 des 4-Spalten-Layouts.
  * Zeigt optionalen Detail-Content, der von Seiten gesetzt wird.
  * Wenn kein Content vorhanden ist, wird das Panel automatisch versteckt.
+ *
+ * Der Content wird direkt gerendert ohne zusätzliche Layout-Wrapper.
+ * Panels wie ThemeDetailPanel kontrollieren ihr eigenes Layout (h-full, ScrollArea, etc.).
  *
  * @example
  * ```tsx
@@ -37,11 +39,6 @@ export function DetailDrawer({ className }: DetailDrawerProps): React.ReactEleme
     return null
   }
 
-  return (
-    <div className={cn("flex h-full flex-col", className)}>
-      <ScrollArea className="flex-1">
-        <div className="p-4">{content}</div>
-      </ScrollArea>
-    </div>
-  )
+  // Content direkt rendern - Panels kontrollieren ihr eigenes Layout
+  return <div className={cn("h-full w-full", className)}>{content}</div>
 }
