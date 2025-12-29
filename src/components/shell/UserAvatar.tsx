@@ -62,10 +62,10 @@ export function UserAvatar(): React.ReactElement {
   const avatarSeed = user?.avatarSeed || displayName
 
   // DiceBear "avataaars" URL für lustige, comic-artige Avatare
+  // DiceBear ist IMMER der Standard-Avatar
+  // Später: OAuth-Avatar kann in Benutzereinstellungen aktiviert werden
   const diceBearUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(avatarSeed)}`
-
-  // Avatar-Quelle: User-Avatar (eigenes Bild) oder DiceBear
-  const avatarSrc = user?.avatar || diceBearUrl
+  const avatarSrc = diceBearUrl
 
   // Icon-Mapping für die Menüpunkte
   const iconMap: Record<string, typeof User> = {
@@ -90,7 +90,7 @@ export function UserAvatar(): React.ReactElement {
           variant="ghost"
           size="icon"
           className={cn(
-            "relative size-10 shrink-0 overflow-hidden rounded-full p-0 transition-opacity hover:opacity-80",
+            "relative size-10 shrink-0 rounded-full p-0 transition-opacity hover:opacity-80",
             "focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-none"
           )}
         >

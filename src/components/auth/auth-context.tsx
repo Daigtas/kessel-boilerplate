@@ -14,11 +14,16 @@ export interface User {
   email: string
   name: string
   avatar?: string
-  avatarSeed?: string // Seed für DiceBear Avatar-Generierung
+  avatarSeed?: string // Seed für DiceBear Avatar-Generierung (avataaars)
   role: UserRole
   roleId?: string // UUID der Rolle aus roles Tabelle
   createdAt?: string // ISO timestamp string
   themePreference?: string // Bevorzugtes Theme des Users
+  // Chatbot-Einstellungen
+  chatbotAvatarSeed?: string // Seed für DiceBear Chatbot-Avatar (bottts)
+  chatbotTone?: "formal" | "casual" // Ansprache: formal (Sie) oder casual (Du)
+  chatbotDetailLevel?: "brief" | "balanced" | "detailed" // Detailgrad der Antworten
+  chatbotEmojiUsage?: "none" | "moderate" | "many" // Emoji-Verwendung
 }
 
 /** Auth Context Interface */
@@ -59,6 +64,10 @@ async function loadUserProfile(supabaseUser: SupabaseUser): Promise<User> {
       role,
       role_id,
       theme_preference,
+      chatbot_avatar_seed,
+      chatbot_tone,
+      chatbot_detail_level,
+      chatbot_emoji_usage,
       roles:role_id (
         name,
         display_name
@@ -121,6 +130,12 @@ async function loadUserProfile(supabaseUser: SupabaseUser): Promise<User> {
     roleId: roleId,
     createdAt: profile?.created_at || undefined,
     themePreference: profile?.theme_preference || undefined,
+    // Chatbot-Einstellungen
+    chatbotAvatarSeed: profile?.chatbot_avatar_seed || undefined,
+    chatbotTone: (profile?.chatbot_tone as "formal" | "casual") || undefined,
+    chatbotDetailLevel:
+      (profile?.chatbot_detail_level as "brief" | "balanced" | "detailed") || undefined,
+    chatbotEmojiUsage: (profile?.chatbot_emoji_usage as "none" | "moderate" | "many") || undefined,
   }
 }
 

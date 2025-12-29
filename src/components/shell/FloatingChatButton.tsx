@@ -1,9 +1,11 @@
 "use client"
 
-import { MessageSquare, X } from "lucide-react"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { useChatOverlay } from "./shell-context"
+import { useAuth } from "@/components/auth"
 import { AIInteractable } from "@/components/ai/AIInteractable"
 
 /**
@@ -19,6 +21,13 @@ import { AIInteractable } from "@/components/ai/AIInteractable"
  */
 export function FloatingChatButton(): React.ReactElement {
   const { isOpen, toggle } = useChatOverlay()
+  const { user } = useAuth()
+
+  // Chatbot-Avatar Seed: Gespeicherter Seed oder Fallback
+  const chatbotAvatarSeed = user?.chatbotAvatarSeed || user?.email || "default"
+
+  // DiceBear "bottts" URL für Robot-Avatar
+  const chatbotAvatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(chatbotAvatarSeed)}`
 
   return (
     <div className="fixed right-6 bottom-6 z-50">
@@ -42,7 +51,9 @@ export function FloatingChatButton(): React.ReactElement {
           {isOpen ? (
             <X className="size-6 transition-transform" />
           ) : (
-            <MessageSquare className="size-6 transition-transform" />
+            <Avatar className="size-10">
+              <AvatarImage src={chatbotAvatarUrl} alt="Chatbot" />
+            </Avatar>
           )}
         </Button>
       </AIInteractable>

@@ -61,11 +61,45 @@ function buildSystemPrompt(context: {
   hasHtmlDump: boolean
   availableTools: string[]
   modelName: string
+  chatbotTone?: "formal" | "casual"
+  chatbotDetailLevel?: "brief" | "balanced" | "detailed"
+  chatbotEmojiUsage?: "none" | "moderate" | "many"
 }): string {
   const toolList =
     context.availableTools.length > 0
       ? `\n\n### Verfügbare Tools - RUFE SIE DIREKT AUF!\nDu hast folgende Tools zur Verfügung:\n${context.availableTools.map((t) => `- ${t}`).join("\n")}\n\n**KRITISCH - Tool-Aufruf:**\n- RUFE Tools DIREKT auf - NICHT nur ankündigen!\n- Wenn du sagst "ich frage die Rollen ab", dann RUFE query_roles SOFORT auf\n- query_* Tools: SOFORT ausführen, keine Bestätigung\n- insert_*: IDs werden AUTO-generiert, NIEMALS fragen\n- insert_*: created_at/updated_at werden AUTO-gesetzt\n- delete_*: NUR hier Bestätigung erforderlich\n\n**Fremdschlüssel-Workflow:**\n1. Wenn role_id etc. benötigt: RUFE query_roles auf (nicht fragen!)\n2. Dann: RUFE insert_profiles mit der gefundenen role_id auf`
       : ""
+
+  // Persönlichkeits-Anweisungen basierend auf User-Einstellungen
+  const tone = context.chatbotTone || "casual"
+  const detailLevel = context.chatbotDetailLevel || "balanced"
+  const emojiUsage = context.chatbotEmojiUsage || "moderate"
+
+  const toneInstructions =
+    tone === "formal"
+      ? 'Sprich den User mit "Sie" an. Bleibe professionell und sachlich.'
+      : 'Sprich den User mit "Du" an. Sei locker, freundlich und entspannt.'
+
+  const detailInstructions =
+    detailLevel === "brief"
+      ? "Antworte kurz und prägnant. Komm direkt zum Punkt."
+      : detailLevel === "detailed"
+        ? "Erkläre ausführlich. Gib Hintergründe und Beispiele."
+        : "Antworte ausgewogen - nicht zu kurz, nicht zu lang."
+
+  const emojiInstructions =
+    emojiUsage === "none"
+      ? "Verwende KEINE Emojis."
+      : emojiUsage === "many"
+        ? "Verwende häufig passende Emojis um deine Antworten aufzulockern! 🎉"
+        : "Verwende gelegentlich passende Emojis."
+
+  const personalitySection = `
+## Kommunikationsstil
+${toneInstructions}
+${detailInstructions}
+${emojiInstructions}
+`
 
   return `Du bist ein hilfreicher KI-Assistent für eine B2B-Anwendung.
 
@@ -88,9 +122,8 @@ ${context.interactions}
 
 ${context.hasScreenshot ? "\n## Screenshot verfügbar\nDu hast Zugriff auf einen Screenshot der aktuellen Seite. Nutze ihn um visuelle Fragen zu beantworten." : ""}
 ${context.hasHtmlDump ? "\n## HTML-Dump verfügbar\nDu hast Zugriff auf einen HTML-Dump der Seite für strukturelle Analysen." : ""}${toolList}
-
+${personalitySection}
 ## Antwort-Stil
-- Sei präzise und hilfreich
 - Verwende Tools wenn nötig - keine unnötigen Fragen
 - Bei Fehlern: Erkläre was schiefgelaufen ist und wie man es behebt
 - Bei UI-Aktionen: Führe sie direkt aus mit execute_ui_action Tool
@@ -378,7 +411,14 @@ export async function POST(req: Request) {
     const selectedModel = model ?? routerDecision.model
     const maxSteps = routerDecision.maxSteps
 
-    // 10. Kontext und System-Prompt aufbauen
+    // 10. Chatbot-Einstellungen aus Profil laden
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("chatbot_tone, chatbot_detail_level, chatbot_emoji_usage")
+      .eq("id", user.id)
+      .single()
+
+    // 11. Kontext und System-Prompt aufbauen
     const wikiContent = await loadWikiContent()
     const systemPrompt = buildSystemPrompt({
       wikiContent: wikiContent || "Wiki-Content nicht verfügbar.",
@@ -388,9 +428,14 @@ export async function POST(req: Request) {
       hasHtmlDump: !!htmlDump,
       availableTools: availableToolNames,
       modelName: selectedModel,
+      chatbotTone: (profile?.chatbot_tone as "formal" | "casual") || undefined,
+      chatbotDetailLevel:
+        (profile?.chatbot_detail_level as "brief" | "balanced" | "detailed") || undefined,
+      chatbotEmojiUsage:
+        (profile?.chatbot_emoji_usage as "none" | "moderate" | "many") || undefined,
     })
 
-    // 11. Stream-Text mit gewähltem Modell und Tools
+    // 12. Stream-Text mit gewähltem Modell und Tools
     const result = streamText({
       model: openrouter(selectedModel),
       system: systemPrompt,
@@ -399,7 +444,7 @@ export async function POST(req: Request) {
       experimental_telemetry: { isEnabled: true },
     })
 
-    // 12. Streaming-Response zurückgeben
+    // 13. Streaming-Response zurückgeben
     // assistant-ui benötigt toUIMessageStreamResponse() für korrektes Streaming
     return result.toUIMessageStreamResponse({
       headers: {
