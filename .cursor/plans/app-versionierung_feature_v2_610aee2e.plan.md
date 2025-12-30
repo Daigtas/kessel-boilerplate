@@ -4,30 +4,30 @@ overview: "Implementierung eines dualen Versioning-Systems: App-Version (SemVer 
 todos:
   - id: write-version-script
     content: Build-Script scripts/write-version.ts erstellen (App-Version)
-    status: pending
+    status: completed
   - id: boilerplate-config
     content: Statische Config src/config/boilerplate.ts erstellen
-    status: pending
+    status: completed
   - id: system-info-card
     content: SystemInfoCard Komponente mit beiden Versionen erstellen
-    status: pending
+    status: completed
     dependencies:
       - write-version-script
       - boilerplate-config
   - id: dashboard-integration
     content: App-Dashboard mit SystemInfoCard erweitern
-    status: pending
+    status: completed
     dependencies:
       - system-info-card
   - id: package-json-scripts
     content: package.json Build-Scripts anpassen (prebuild)
-    status: pending
+    status: completed
   - id: gitignore-update
     content: .gitignore um src/config/version.ts erweitern
-    status: pending
+    status: completed
   - id: cursor-rule
     content: Cursor Rule .cursor/rules/versioning.mdc erstellen
-    status: pending
+    status: completed
 ---
 
 # App-Versionierung Feature (aktualisiert)
@@ -119,7 +119,7 @@ Design: Nutzt bestehende Card, Badge, Design Tokens.
 
 ### 4. Dashboard-Integration
 
-[`src/app/(shell)/app-verwaltung/app-dashboard/page.tsx`](<src/app/\\(shell)/app-verwaltung/app-dashboard/page.tsx>) importiert und zeigt SystemInfoCard.
+[`src/app/(shell)/app-verwaltung/app-dashboard/page.tsx`](<src/app/\(shell)/app-verwaltung/app-dashboard/page.tsx>) importiert und zeigt SystemInfoCard.
 
 ### 5. package.json Scripts
 

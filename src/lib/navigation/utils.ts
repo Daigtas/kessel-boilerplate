@@ -33,7 +33,9 @@ export function findNavItemByPath(pathname: string, navSections: NavSection[]): 
       }
       // Rekursiv in children suchen
       if (item.children) {
-        const found = findNavItemByPath(pathname, [{ items: item.children }])
+        const found = findNavItemByPath(pathname, [
+          { id: `${item.id}-children`, items: item.children },
+        ])
         if (found) return found
       }
     }
@@ -97,7 +99,7 @@ export function findNavItemBySlug(slug: string, navSections: NavSection[]): NavI
       }
       // Prüfe children rekursiv
       if (item.children) {
-        const found = findNavItemBySlug(slug, [{ items: item.children }])
+        const found = findNavItemBySlug(slug, [{ id: `${item.id}-children`, items: item.children }])
         if (found) return found
       }
     }

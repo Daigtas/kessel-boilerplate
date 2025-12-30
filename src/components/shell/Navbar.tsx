@@ -300,7 +300,7 @@ function NavItemComponent({
   const visibleChildren = item.children?.filter((child) => isVisible(child))
   const hasChildren = visibleChildren && visibleChildren.length > 0
   const isActive = item.href === pathname
-  const isChildActive = visibleChildren?.some((child) => child.href === pathname)
+  const isChildActive = visibleChildren?.some((child) => child.href === pathname) ?? false
 
   // Standardmäßig expanded (aufgeklappt), außer für Account-Section Items "Design System" und "Layout Templates"
   // Diese sollen standardmäßig eingeklappt sein, es sei denn, ein Child ist aktiv
