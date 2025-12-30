@@ -27,7 +27,6 @@ import { RefreshCw, Database as DatabaseIcon } from "lucide-react"
 import { toast } from "sonner"
 import { useCurrentNavItem } from "@/lib/navigation/use-current-nav-item"
 import { useDatasourceFilter, DUMMY_DATABASES } from "@/hooks/use-datasource-filter"
-import { useExplorer } from "@/components/shell"
 
 type AccessLevel = "none" | "read" | "read_write" | "full"
 
@@ -78,16 +77,7 @@ export default function DatasourcesPage(): React.ReactElement {
 
   // Filter-Context
   const { databases, setDatabases, filter, isTableVisible } = useDatasourceFilter()
-
-  // Explorer öffnen wenn Seite geladen wird
-  const { setOpen: setExplorerOpen } = useExplorer()
-  useEffect(() => {
-    // Explorer für diese Seite aktivieren (Filter-Tree)
-    const timer = setTimeout(() => {
-      setExplorerOpen(true)
-    }, 50)
-    return () => clearTimeout(timer)
-  }, [setExplorerOpen])
+  // Explorer-Öffnung wird vom Layout gesteuert (ExplorerAutoOpen)
 
   // Lade Infra-DB Daten
   const loadInfraDataSources = async () => {
