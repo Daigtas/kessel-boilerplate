@@ -72,6 +72,9 @@ function ShellInner({ children, navbar, explorer, className }: AppShellProps): R
   // Flag um Drag-initiierte Expands zu erkennen (verhindert doppeltes Expand)
   const isDragExpandingRef = useRef(false)
 
+  // Flag um initiale Panel-Synchronisation zu tracken (nur einmal nach Mount)
+  const hasInitialSyncRef = useRef(false)
+
   // Mount-State und Container-Breite tracken
   useEffect(() => {
     // Markiere als gemountet (wird nur einmal ausgeführt)
@@ -88,6 +91,37 @@ function ShellInner({ children, navbar, explorer, className }: AppShellProps): R
     window.addEventListener("resize", updateWidth)
     return () => window.removeEventListener("resize", updateWidth)
   }, [])
+
+  // Einmalige Panel-Synchronisation nach Mount
+  // Problem: defaultSize wird nur beim ersten Render verwendet, danach ignoriert
+  // Lösung: Nach dem Mount das Panel imperativ auf die korrekte Größe setzen
+  useEffect(() => {
+    // Nur einmal ausführen, nach Mount
+    if (hasInitialSyncRef.current || !isMounted) return
+
+    const panel = navbarPanelRef.current
+    if (!panel) return
+
+    // Markiere als synchronisiert
+    hasInitialSyncRef.current = true
+
+    // Wenn Navbar collapsed ist, Panel auf collapsed-Größe setzen
+    if (navbarCollapsed) {
+      if (!panel.isCollapsed()) {
+        panel.collapse()
+      }
+      return
+    }
+
+    // Wenn Navbar expanded ist, auf feste 15% setzen
+    const currentSize = panel.getSize()
+    const targetPercent = 15 // Fester Wert, keine Pixel-Konvertierung
+
+    // Nur resizen wenn signifikante Abweichung (> 0.5%)
+    if (Math.abs(currentSize - targetPercent) > 0.5) {
+      panel.resize(targetPercent)
+    }
+  }, [isMounted, navbarCollapsed])
 
   // Synchronisiere Panel mit State (NUR für Keyboard-Shortcuts, nicht für Drag)
   useEffect(() => {
@@ -228,11 +262,14 @@ function ShellInner({ children, navbar, explorer, className }: AppShellProps): R
     setNavbarCollapsed(false)
   }, [setNavbarCollapsed])
 
+  // Fester Prozent-Wert für Navbar-Expand (einfacher als Pixel↔Prozent-Konvertierung)
+  const NAVBAR_EXPANDED_PERCENT = 15
+
   // Single-Click auf Navbar-Handle: Bei collapsed Navbar sofort expandieren
   // Löst das "zweimal klicken" Problem von react-resizable-panels
   const handleNavbarHandleClick = useCallback(() => {
     const panel = navbarPanelRef.current
-    if (!panel || containerWidth <= 0) return
+    if (!panel) return
 
     // Nur reagieren wenn collapsed - sonst normales Drag-Verhalten
     if (navbarCollapsed || panel.isCollapsed()) {
@@ -240,26 +277,24 @@ function ShellInner({ children, navbar, explorer, className }: AppShellProps): R
       setNavbarCollapsed(false)
       panel.expand()
       setTimeout(() => {
-        const targetPercent = pxToPercent(DEFAULT_PANEL_WIDTHS.navbar, containerWidth)
-        panel.resize(targetPercent)
+        panel.resize(NAVBAR_EXPANDED_PERCENT)
         setNavbarTransitionEnabled(false)
       }, 50)
     }
-  }, [navbarCollapsed, containerWidth, setNavbarCollapsed, setNavbarTransitionEnabled])
+  }, [navbarCollapsed, setNavbarCollapsed, setNavbarTransitionEnabled])
 
   // Doppelklick auf Navbar-Handle: Toggle zwischen collapsed/expanded
   const handleNavbarHandleDoubleClick = useCallback(() => {
     const panel = navbarPanelRef.current
-    if (!panel || containerWidth <= 0) return
+    if (!panel) return
 
     if (navbarCollapsed || panel.isCollapsed()) {
-      // Collapsed → Expand auf Standardgröße mit Animation
+      // Collapsed → Expand auf feste 15%
       setNavbarTransitionEnabled(true)
       setNavbarCollapsed(false)
       panel.expand()
       setTimeout(() => {
-        const targetPercent = pxToPercent(DEFAULT_PANEL_WIDTHS.navbar, containerWidth)
-        panel.resize(targetPercent)
+        panel.resize(NAVBAR_EXPANDED_PERCENT)
         setNavbarTransitionEnabled(false)
       }, 50)
     } else {
@@ -269,7 +304,7 @@ function ShellInner({ children, navbar, explorer, className }: AppShellProps): R
       panel.collapse()
       setTimeout(() => setNavbarTransitionEnabled(false), 200)
     }
-  }, [navbarCollapsed, containerWidth, setNavbarCollapsed, setNavbarTransitionEnabled])
+  }, [navbarCollapsed, setNavbarCollapsed, setNavbarTransitionEnabled])
 
   // Doppelklick auf Detail-Drawer-Handle: Panel komplett ausblenden
   const handleDetailDrawerHandleDoubleClick = useCallback(() => {
