@@ -91,7 +91,10 @@ export function AppNameMenu({ collapsed = false }: { collapsed?: boolean }): Rea
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="hover:bg-sidebar-accent flex h-auto min-w-0 items-center gap-2 px-2 py-1.5"
+          className={cn(
+            "flex h-auto min-w-0 items-center gap-2 bg-transparent px-2 py-1.5 transition-all",
+            "hover:scale-110 hover:bg-transparent"
+          )}
         >
           <appConfig.logo className="text-sidebar-foreground size-5 shrink-0" />
           <span className="text-sidebar-foreground truncate text-lg font-bold uppercase">
