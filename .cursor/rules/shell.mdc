@@ -12,16 +12,23 @@ Dieses Projekt verwendet ein 4-Spalten-Layout basierend auf `react-resizable-pan
 
 | Spalte | Komponente | Standard | Bereich | Beschreibung |
 |--------|------------|----------|---------|--------------|
-| 1 | Navbar | **15%** | 3-22% (kollabierbar auf ~48px) | Primäre Navigation |
+| 1 | Navbar | **15%** | ~100px bis 25% (kollabierbar auf **48px**) | Primäre Navigation |
 | 2 | Explorer | **15%** | 10-25% (optional) | Kontext-Browser |
 | 3 | Main Area | Flexibel | min 30% | Hauptinhalt |
 | 4 | Assist | **15%** | 10-25% (optional) | AI-Chat, Hilfe, Detail-Drawer |
 
 ### Standard-Breiten
 - **Alle optionalen Spalten (1, 2, 4) haben 15% als Standardbreite**
-- Bei ~1600px Fensterbreite entspricht das ~240px
-- User kann Spalten per Drag-Resize anpassen (wird in LocalStorage gespeichert)
+- Meiste Größen sind in **PROZENT** (1-100)
+- **AUSNAHME Navbar:** Collapsed = feste **48px**, MinSize = feste **100px** (Autocollapse-Trigger)
+- Autocollapse: Wenn Navbar unter 100px gezogen wird → automatisches Collapse auf 48px
+- User kann Spalten per Drag-Resize anpassen
+- Persistenz erfolgt automatisch via `autoSaveId="app-shell"` in localStorage
 - Spalte 3 (Main) nimmt den verbleibenden Platz ein
+
+### react-resizable-panels Hinweis
+Die Library arbeitet intern mit **Prozent-Werten** (1-100). Für feste Pixel-Breiten (Navbar collapsed)
+wird dynamisch umgerechnet: `(PIXEL / containerWidth) * 100`
 
 ---
 

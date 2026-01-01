@@ -4,35 +4,49 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 
 /**
  * LocalStorage Keys für Shell-State
+ * HINWEIS: Panel-Breiten werden jetzt von react-resizable-panels via autoSaveId verwaltet
  */
 const STORAGE_KEYS = {
   navbarCollapsed: "shell-navbar-collapsed",
   explorerOpen: "shell-explorer-open",
-  detailDrawerOpen: "shell-detail-drawer-open",
   chatOverlayOpen: "shell-chat-overlay-open",
-  panelWidths: "shell-panel-widths-px", // Pixel-basiert
 } as const
 
 /**
- * Default Panel-Breiten in PIXELN
- * Diese werden bei Hard Reload verwendet
- * Alle optionalen Spalten: 15% der Fensterbreite (bei ~1600px ≈ 240px)
+ * Feste Pixel-Werte für Navbar Collapsed
+ * Diese garantieren, dass Icons nie abgeschnitten werden, egal wie breit das Fenster ist.
  */
-export const DEFAULT_PANEL_WIDTHS = {
-  navbar: 240, // 15% von ~1600px Fensterbreite
-  navbarCollapsed: 48, // Icon-only
-  explorer: 240, // 15% von ~1600px Fensterbreite
-  assist: 240, // 15% von ~1600px Fensterbreite
+export const NAVBAR_COLLAPSED_PX = 48 // Breite für Icon-only Navbar
+export const NAVBAR_MIN_PX = 100 // Autocollapse-Trigger: unter 100px → collapse
+
+/**
+ * Panel-Größen in PROZENT (1-100)
+ * react-resizable-panels arbeitet nur mit Prozenten.
+ *
+ * HINWEIS: navbarCollapsed wird NICHT hier definiert, sondern dynamisch
+ * in AppShell berechnet: (NAVBAR_COLLAPSED_PX / containerWidth) * 100
+ */
+export const PANEL_SIZES = {
+  /** Navbar expanded: 15% der Fensterbreite */
+  navbar: 15,
+  /** Explorer: 15% der Fensterbreite */
+  explorer: 15,
+  /** Detail-Drawer (Assist): 15% der Fensterbreite */
+  assist: 15,
 } as const
 
 /**
- * Min/Max Breiten in Pixeln
+ * Panel Min/Max Constraints in PROZENT
+ * Werden direkt an react-resizable-panels übergeben
+ *
+ * HINWEIS: navbar.min wird dynamisch in AppShell berechnet (NAVBAR_MIN_PX / containerWidth * 100)
+ * um das Autocollapse-Verhalten zu ermöglichen.
  */
 export const PANEL_CONSTRAINTS = {
-  navbar: { min: 48, max: 400 },
-  explorer: { min: 180, max: 500 },
-  assist: { min: 250, max: 600 },
-  main: { min: 400 }, // Mindestbreite für Main
+  navbar: { max: 25 }, // min wird dynamisch berechnet
+  explorer: { min: 10, max: 25 },
+  assist: { min: 10, max: 25 },
+  main: { min: 30 },
 } as const
 
 /**
@@ -42,16 +56,8 @@ export const PANEL_CONSTRAINTS = {
 export type DetailDrawerContent = ReactNode | null
 
 /**
- * Panel-Breiten in Pixeln
- */
-export interface PanelWidths {
-  navbar: number
-  explorer: number
-  assist: number
-}
-
-/**
  * Shell-State Interface
+ * Panel-Breiten sind NICHT mehr Teil des State - sie werden von der Library verwaltet
  */
 export interface ShellState {
   /** Navbar ist auf Icons-only minimiert */
@@ -64,8 +70,6 @@ export interface ShellState {
   detailDrawerContent: DetailDrawerContent
   /** Chat-Overlay ist geöffnet */
   chatOverlayOpen: boolean
-  /** Panel-Breiten in PIXELN (stabil bei Toggle) */
-  panelWidths: PanelWidths
   /** Transition aktiviert (nur während Navbar Collapse/Expand) */
   navbarTransitionEnabled: boolean
 }
@@ -92,8 +96,6 @@ export interface ShellContextValue extends ShellState {
   toggleChatOverlay: () => void
   /** Set Chat Overlay Open */
   setChatOverlayOpen: (open: boolean) => void
-  /** Update Panel-Breiten in Pixeln */
-  updatePanelWidths: (widths: Partial<PanelWidths>) => void
   /** Enable/Disable Navbar Transition (für smooth collapse/expand) */
   setNavbarTransitionEnabled: (enabled: boolean) => void
 }
@@ -107,11 +109,6 @@ const defaultState: ShellState = {
   detailDrawerOpen: false,
   detailDrawerContent: null,
   chatOverlayOpen: false,
-  panelWidths: {
-    navbar: DEFAULT_PANEL_WIDTHS.navbar,
-    explorer: DEFAULT_PANEL_WIDTHS.explorer,
-    assist: DEFAULT_PANEL_WIDTHS.assist,
-  },
   navbarTransitionEnabled: false,
 }
 
@@ -172,41 +169,6 @@ export function useChatOverlay() {
 }
 
 /**
- * Validiert Panel-Breiten aus LocalStorage
- * Prüft ob die Werte noch im erwarteten Bereich liegen (10-25% der typischen Fensterbreite)
- *
- * WICHTIG: assist (Spalte 4) wird IMMER auf den Default zurückgesetzt,
- * um sicherzustellen dass sie immer bei 15% startet.
- * User-Resizes werden während der Session gespeichert, aber beim nächsten Load zurückgesetzt.
- */
-function validatePanelWidths(stored: PanelWidths | null): PanelWidths {
-  if (!stored) return defaultState.panelWidths
-
-  // Typische Fensterbreite für Validierung (~1600px)
-  const typicalWidth = 1600
-  const minPercent = 10 // 10% Minimum
-  const maxPercent = 25 // 25% Maximum
-  const minPx = Math.round((typicalWidth * minPercent) / 100)
-  const maxPx = Math.round((typicalWidth * maxPercent) / 100)
-
-  const validated: PanelWidths = {
-    navbar:
-      stored.navbar >= minPx && stored.navbar <= maxPx
-        ? stored.navbar
-        : DEFAULT_PANEL_WIDTHS.navbar,
-    explorer:
-      stored.explorer >= minPx && stored.explorer <= maxPx
-        ? stored.explorer
-        : DEFAULT_PANEL_WIDTHS.explorer,
-    // assist: IMMER auf Default zurücksetzen
-    // Dies stellt sicher, dass die Spalte immer bei 15% startet
-    assist: DEFAULT_PANEL_WIDTHS.assist,
-  }
-
-  return validated
-}
-
-/**
  * LocalStorage Helper
  */
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -214,10 +176,6 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
     const stored = localStorage.getItem(key)
     if (stored) {
-      // Spezielle Validierung für Panel-Breiten
-      if (key === STORAGE_KEYS.panelWidths) {
-        return validatePanelWidths(JSON.parse(stored)) as T
-      }
       return JSON.parse(stored)
     }
   } catch {
@@ -246,6 +204,10 @@ interface ShellProviderProps {
 
 /**
  * Shell Provider Komponente
+ *
+ * Verwaltet den Shell-State (Toggle-Zustände, Drawer-Content).
+ * Panel-Breiten werden NICHT hier verwaltet - react-resizable-panels
+ * handhabt das via autoSaveId automatisch.
  */
 export function ShellProvider({ children, initialState }: ShellProviderProps): React.ReactElement {
   const [mounted, setMounted] = useState(false)
@@ -259,16 +221,13 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Setting mounted state after hydration is intentional
     setMounted(true)
 
-    // Lade alle gespeicherten Werte
-    // WICHTIG: detailDrawerOpen wird NICHT aus LocalStorage geladen,
-    // da es dynamisch von der aktuellen Seite abhängt (z.B. Tweak-Seite setzt Content)
+    // Lade gespeicherte Toggle-Zustände
+    // HINWEIS: Panel-Breiten werden von react-resizable-panels via autoSaveId verwaltet
     setState((prev) => ({
       ...prev,
       navbarCollapsed: loadFromStorage(STORAGE_KEYS.navbarCollapsed, prev.navbarCollapsed),
       explorerOpen: loadFromStorage(STORAGE_KEYS.explorerOpen, prev.explorerOpen),
-      // detailDrawerOpen wird nicht geladen - es hängt vom Content ab, nicht von User-Präferenz
       chatOverlayOpen: loadFromStorage(STORAGE_KEYS.chatOverlayOpen, prev.chatOverlayOpen),
-      panelWidths: loadFromStorage(STORAGE_KEYS.panelWidths, prev.panelWidths),
     }))
   }, [])
 
@@ -283,17 +242,10 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
     saveToStorage(STORAGE_KEYS.explorerOpen, state.explorerOpen)
   }, [state.explorerOpen, mounted])
 
-  // detailDrawerOpen wird NICHT persistiert - es hängt vom Content ab
-
   useEffect(() => {
     if (!mounted) return
     saveToStorage(STORAGE_KEYS.chatOverlayOpen, state.chatOverlayOpen)
   }, [state.chatOverlayOpen, mounted])
-
-  useEffect(() => {
-    if (!mounted) return
-    saveToStorage(STORAGE_KEYS.panelWidths, state.panelWidths)
-  }, [state.panelWidths, mounted])
 
   // Actions
   const toggleNavbar = useCallback(() => {
@@ -348,13 +300,6 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
     }))
   }, [])
 
-  const updatePanelWidths = useCallback((widths: Partial<PanelWidths>) => {
-    setState((prev) => ({
-      ...prev,
-      panelWidths: { ...prev.panelWidths, ...widths },
-    }))
-  }, [])
-
   const setNavbarTransitionEnabled = useCallback((enabled: boolean) => {
     setState((prev) => ({ ...prev, navbarTransitionEnabled: enabled }))
   }, [])
@@ -370,7 +315,6 @@ export function ShellProvider({ children, initialState }: ShellProviderProps): R
     setDetailDrawerContent,
     toggleChatOverlay,
     setChatOverlayOpen,
-    updatePanelWidths,
     setNavbarTransitionEnabled,
   }
 

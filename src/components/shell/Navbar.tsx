@@ -97,7 +97,7 @@ export function Navbar(): React.ReactElement {
         </ScrollArea>
 
         {/* About Section (fixiert unten) - immer sichtbar */}
-        <div className="border-sidebar-border shrink-0 border-t pt-2">
+        <div className="border-sidebar-border shrink-0 border-t px-1 pt-2">
           {navigationConfig
             .filter((section) => section.id === "about")
             .map((section) => {
