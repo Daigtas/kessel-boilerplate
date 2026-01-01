@@ -21,6 +21,13 @@ Diese Ebene erfasst _was_ gebaut wird und _wie_ die Architektur aussieht.
   - Local-First Interaction-Tracking
   - assistant-ui Integration
 
+- **`app-logo-generator.md`**: KI-gestützter App-Logo Generator
+  - Multi-Provider-Support (OpenRouter, fal.ai)
+  - Nano-Banana-optimierte Prompt-Struktur
+  - Canvas-basierte Post-Processing-Pipeline
+  - CSS-basierte Theme-Anpassung (Dark/Light Mode)
+  - Automatic Thresholding für echte Transparenz
+
 - **`component_library.md`**: Komponentenbibliothek-Links
   - COSS.com, Cult-UI, Motion-Primitives
   - Referenzen für zukünftige Komponenten
