@@ -106,12 +106,7 @@ export function UserAvatar(): React.ReactElement {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm leading-none font-medium">{displayName}</p>
-            {user?.email && (
-              <p className="text-muted-foreground text-xs leading-none">{user.email}</p>
-            )}
-          </div>
+          <p className="text-sm leading-none font-medium">{displayName}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
@@ -120,8 +115,7 @@ export function UserAvatar(): React.ReactElement {
           const Icon = iconMap[item.id] || User
           const isActive = item.href === pathname
 
-          // Spezialfall: Profil zeigt den User-Namen
-          const label = item.id === "user-profile" ? displayName : item.label
+          const label = item.label
 
           return (
             <DropdownMenuItem

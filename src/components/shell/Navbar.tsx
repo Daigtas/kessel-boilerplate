@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronRight, ChevronLeft } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
@@ -25,9 +24,9 @@ import {
 
 import { useShell } from "./shell-context"
 import { useAuth, usePermissions } from "@/components/auth"
-import { navigationConfig, appConfig, type NavItem, type NavSection } from "@/config/navigation"
+import { navigationConfig, type NavItem, type NavSection } from "@/config/navigation"
 import { AIInteractable } from "@/components/ai/AIInteractable"
-import { CollapsibleFooterSection } from "./CollapsibleFooterSection"
+import { AppNameMenu } from "./AppNameMenu"
 
 /** Typ für die isVisible Funktion */
 type IsVisibleFn = (item: NavItem | NavSection) => boolean
@@ -43,7 +42,7 @@ type IsVisibleFn = (item: NavItem | NavSection) => boolean
  * Nutzt PermissionsContext für DB-basierte Berechtigungsprüfung.
  */
 export function Navbar(): React.ReactElement {
-  const { navbarCollapsed, toggleNavbar } = useShell()
+  const { navbarCollapsed } = useShell()
   const { logout, user } = useAuth()
   const { canAccess } = usePermissions()
   const pathname = usePathname()
@@ -53,14 +52,6 @@ export function Navbar(): React.ReactElement {
 
   // Sichtbarkeitsprüfung über PermissionsContext (nutzt DB-Berechtigungen)
   const isVisible: IsVisibleFn = (item) => canAccess(item.id, userRole)
-
-  // State für Footer-Sections (exklusiv: nur eine gleichzeitig offen)
-  const [openFooterSection, setOpenFooterSection] = useState<"admin" | "about" | null>(null)
-
-  // Handler für exklusives Öffnen
-  const handleFooterSectionOpen = (section: "admin" | "about") => {
-    setOpenFooterSection((prev) => (prev === section ? null : section))
-  }
 
   // Logout mit hartem Redirect zur Login-Seite
   // Verwendet window.location für vollständigen Page-Reload, um alle Caches zu leeren
@@ -73,74 +64,14 @@ export function Navbar(): React.ReactElement {
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex h-full flex-col">
-        {/* App Name Header - Link zur Home-Seite (fixiert oben) */}
+        {/* App Name Header - mit optionalem Admin-Dropdown (fixiert oben) */}
         <div
           className={cn(
             "flex h-14 shrink-0 items-center",
             navbarCollapsed ? "justify-center px-1" : "justify-between px-4"
           )}
         >
-          {navbarCollapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link href="/">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-10 transition-transform duration-200"
-                  >
-                    <appConfig.logo className="size-5" />
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{appConfig.name}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <>
-              <Link
-                href="/"
-                className="flex min-w-0 items-center gap-2 transition-opacity duration-200 hover:opacity-80"
-              >
-                <appConfig.logo className="text-sidebar-foreground size-5 shrink-0" />
-                <span className="text-sidebar-foreground truncate text-lg font-bold uppercase transition-opacity duration-200">
-                  {appConfig.name}
-                </span>
-              </Link>
-
-              {/* Collapse Toggle - Chevron */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <AIInteractable
-                    id="toggle-navbar"
-                    action="toggle"
-                    target="navbar"
-                    description="Klappt die Navigationsleiste ein oder aus"
-                    keywords={[
-                      "navbar",
-                      "navigation",
-                      "sidebar",
-                      "seitenleiste",
-                      "menü",
-                      "menu",
-                      "einklappen",
-                      "ausklappen",
-                    ]}
-                    category="layout"
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleNavbar}
-                      className="text-sidebar-foreground hover:bg-sidebar-accent size-6 shrink-0"
-                    >
-                      <ChevronLeft className="size-4" />
-                    </Button>
-                  </AIInteractable>
-                </TooltipTrigger>
-                <TooltipContent side="right">Navbar minimieren</TooltipContent>
-              </Tooltip>
-            </>
-          )}
+          <AppNameMenu collapsed={navbarCollapsed} />
         </div>
 
         {/* App-Content Navigation (scrollbar) - nimmt verfügbaren Platz ein */}
@@ -165,122 +96,27 @@ export function Navbar(): React.ReactElement {
           </nav>
         </ScrollArea>
 
-        {/* About & App-Verwaltung (fixiert unten) - kollabierbare Footer-Sections */}
+        {/* About Section (fixiert unten) - immer sichtbar */}
         <div className="border-sidebar-border shrink-0 border-t">
-          {/* App-Verwaltung Section (nur für Admin) */}
-          {navigationConfig
-            .filter((section) => section.id === "admin")
-            .map((section) => {
-              if (!isVisible(section)) return null
-              return (
-                <CollapsibleFooterSection
-                  key={section.id}
-                  title={section.title ?? "APP-VERWALTUNG"}
-                  isOpen={openFooterSection === "admin"}
-                  onOpenChange={(open) => {
-                    if (open) {
-                      handleFooterSectionOpen("admin")
-                    } else {
-                      setOpenFooterSection(null)
-                    }
-                  }}
-                  collapsed={navbarCollapsed}
-                >
-                  <NavSectionItemsOnly
-                    section={section}
-                    collapsed={navbarCollapsed}
-                    pathname={pathname}
-                    isVisible={isVisible}
-                    onLogout={handleLogout}
-                    user={user}
-                  />
-                </CollapsibleFooterSection>
-              )
-            })}
-
-          {/* Separator über volle Breite (nur wenn App-Verwaltung sichtbar) */}
-          {navigationConfig.some((section) => section.id === "admin" && isVisible(section)) && (
-            <Separator />
-          )}
-
-          {/* About Section */}
           {navigationConfig
             .filter((section) => section.id === "about")
             .map((section) => {
               if (!isVisible(section)) return null
               return (
-                <CollapsibleFooterSection
+                <NavSectionComponent
                   key={section.id}
-                  title={section.title ?? "ÜBER DIE APP"}
-                  isOpen={openFooterSection === "about"}
-                  onOpenChange={(open) => {
-                    if (open) {
-                      handleFooterSectionOpen("about")
-                    } else {
-                      setOpenFooterSection(null)
-                    }
-                  }}
+                  section={section}
                   collapsed={navbarCollapsed}
-                >
-                  <NavSectionItemsOnly
-                    section={section}
-                    collapsed={navbarCollapsed}
-                    pathname={pathname}
-                    isVisible={isVisible}
-                    onLogout={handleLogout}
-                    user={user}
-                  />
-                </CollapsibleFooterSection>
+                  pathname={pathname}
+                  isVisible={isVisible}
+                  onLogout={handleLogout}
+                  user={user}
+                />
               )
             })}
         </div>
       </div>
     </TooltipProvider>
-  )
-}
-
-/**
- * Nav Section Items Only Komponente
- *
- * Rendert nur die Menüpunkte einer Section (ohne Section Title).
- * Wird für Footer-Sections verwendet, da der Title in CollapsibleFooterSection gehandhabt wird.
- */
-function NavSectionItemsOnly({
-  section,
-  collapsed,
-  pathname,
-  isVisible,
-  onLogout,
-  user,
-}: {
-  section: NavSection
-  collapsed: boolean
-  pathname: string
-  isVisible: IsVisibleFn
-  onLogout: () => Promise<void>
-  user: { name?: string; email?: string } | null
-}): React.ReactElement {
-  return (
-    <div className="flex flex-col gap-1">
-      {/* Menüpunkte (ohne Section Title) */}
-      {section.items.map((item) => {
-        // Item überspringen wenn nicht sichtbar für aktuelle Rolle
-        if (!isVisible(item)) return null
-
-        return (
-          <NavItemComponent
-            key={item.id}
-            item={item}
-            collapsed={collapsed}
-            pathname={pathname}
-            level={0}
-            isVisible={isVisible}
-            onLogout={onLogout}
-            user={user}
-          />
-        )
-      })}
-    </div>
   )
 }
 
@@ -310,7 +146,7 @@ function NavSectionComponent({
     <div className="flex flex-col gap-1">
       {/* Section Title (nicht klickbar) */}
       {section.title && !collapsed && (
-        <div className="text-muted-foreground px-4 py-2 text-xs font-semibold tracking-wider uppercase">
+        <div className="text-muted-foreground pt-2 pr-1 pb-2 pl-2 text-xs font-semibold tracking-wider uppercase">
           {section.title}
         </div>
       )}

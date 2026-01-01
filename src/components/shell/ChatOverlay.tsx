@@ -46,8 +46,8 @@ export function ChatOverlay(): React.ReactElement | null {
           className={cn(
             "flex h-full flex-col overflow-hidden rounded-xl",
             // Glassmorphism: mehr Transparenz
-            "bg-card/60 backdrop-blur-md",
-            "border-border/50 border shadow-2xl"
+            "bg-popover/60 backdrop-blur-md",
+            "border shadow-2xl"
           )}
         >
           {/* Chat Content - Thread-Breite auf 100% für Overlay */}
