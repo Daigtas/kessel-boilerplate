@@ -72,6 +72,9 @@ function ShellInner({ children, navbar, explorer, className }: AppShellProps): R
   // Flag um Drag-initiierte Expands zu erkennen (verhindert doppeltes Expand)
   const isDragExpandingRef = useRef(false)
 
+  // Flag um initiale Synchronisation zu tracken (nur einmal nach Mount)
+  const hasInitialSyncRef = useRef(false)
+
   // Container-Breite messen und bei Resize aktualisieren
   useEffect(() => {
     const updateWidth = () => {
@@ -84,6 +87,29 @@ function ShellInner({ children, navbar, explorer, className }: AppShellProps): R
     window.addEventListener("resize", updateWidth)
     return () => window.removeEventListener("resize", updateWidth)
   }, [])
+
+  // Synchronisiere navbarCollapsed State mit tatsächlichem Panel-Zustand nach Mount
+  // Dies behebt den Bug nach Hard Reload: autoSaveId lädt Panel-Größe,
+  // aber navbarCollapsed State kann aus dem Sync sein
+  useEffect(() => {
+    // Nur einmal nach Mount ausführen, mit kleinem Delay damit Panel initialisiert ist
+    if (hasInitialSyncRef.current) return
+
+    const timer = setTimeout(() => {
+      const panel = navbarPanelRef.current
+      if (!panel) return
+
+      hasInitialSyncRef.current = true
+
+      const panelIsCollapsed = panel.isCollapsed()
+      if (panelIsCollapsed !== navbarCollapsed) {
+        // State mit tatsächlichem Panel-Zustand synchronisieren
+        setNavbarCollapsed(panelIsCollapsed)
+      }
+    }, 100) // Kurzer Delay damit autoSaveId das Panel initialisiert hat
+
+    return () => clearTimeout(timer)
+  }, [navbarCollapsed, setNavbarCollapsed])
 
   // Dynamisch berechnete Prozent-Werte für Navbar collapsed/min
   // Diese garantieren feste Pixel-Breiten unabhängig von der Fensterbreite
