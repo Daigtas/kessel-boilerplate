@@ -9,6 +9,8 @@ export const serverSchema = z.object({
   // SERVICE_ROLE_KEY: z.string().min(1),
   // OpenRouter API Key für AI Chat
   OPENROUTER_API_KEY: z.string().min(1),
+  // Optional: fal.ai API Key für Image-Generierung
+  FAL_API_KEY: z.string().optional(),
 })
 
 // 2. Client-Schema definieren UND EXPORTIEREN
@@ -31,6 +33,7 @@ export const env = createEnv({
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     // STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+    FAL_API_KEY: process.env.FAL_API_KEY,
   },
 
   // Validierung überspringen, falls in Build-Umgebungen (z.B. Vercel)
